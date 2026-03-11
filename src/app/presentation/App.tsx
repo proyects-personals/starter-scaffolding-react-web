@@ -47,7 +47,7 @@ export default function App(): JSX.Element {
             onClick={() => setTheme("light")}
             className="px-4 py-2 rounded bg-white/20"
           >
-            Light
+            Lightsssssssssssssssssssssssssss
           </button>
 
           <button

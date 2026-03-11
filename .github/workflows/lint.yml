@@ -24,15 +24,18 @@ jobs:
       - name: Run ESLint
         run: |
           mkdir -p reports
+          # Ejecutar ESLint, generar reporte y verificar los warnings
           npx eslint 'src/**/*.{ts,tsx,js,jsx}' -f html -o reports/eslint-report.html
           npx eslint 'src/**/*.{ts,tsx,js,jsx}' --max-warnings=0
 
       - name: Run Prettier check
         run: |
+          # Verificar el formato de los archivos sin hacer cambios
           npx prettier --check "src/**/*.{ts,tsx,js,jsx,json,css,scss,md}"
 
       - name: Run Prettier format (optional)
         run: |
+          # Formatear los archivos automáticamente
           npx prettier --write "src/**/*.{ts,tsx,js,jsx,json,css,scss,md}"
 
       - name: Upload ESLint report

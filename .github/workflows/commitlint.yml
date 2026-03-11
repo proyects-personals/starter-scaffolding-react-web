@@ -1,7 +1,7 @@
 name: Commitlint
 
 on:
-  pull_request:
+  pull_request_target:
     paths-ignore:
       - "README.md"
 
@@ -10,12 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
@@ -25,7 +27,6 @@ jobs:
       - name: Validate commit messages and generate report
         run: |
           mkdir -p reports
-          # redirige la salida de commitlint a un archivo txt
           npx @commitlint/cli --from=${{ github.event.pull_request.base.sha }} --to=HEAD > reports/commitlint-report.txt || true
           cat reports/commitlint-report.txt
 

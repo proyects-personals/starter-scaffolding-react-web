@@ -9,14 +9,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Validate PR title
         run: |
           TITLE="${{ github.event.pull_request.title }}"
           echo "PR Title: $TITLE"
 
+          # Expresión regular para validar el formato del título del PR según Conventional Commits
           if ! echo "$TITLE" | grep -E "^(feat|fix|chore|docs|refactor|ci|test|style)(\([a-z0-9\-]+\))?: .+"; then
             echo "❌ PR title must follow Conventional Commits"
             echo "Example: feat(auth): add login"
+            echo "Valid types are: feat, fix, chore, docs, refactor, ci, test, style"
             exit 1
           fi
 

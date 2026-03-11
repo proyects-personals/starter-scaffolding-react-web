@@ -32,7 +32,10 @@ jobs:
 
       - name: Run Prettier check and generate report
         run: |
+          mkdir -p reports  # Aseguramos que el directorio "reports" esté presente
           npx prettier --check "src/**/*.{ts,tsx,js,jsx,json,css,scss,md}" --loglevel=debug
+          npx prettier --check "src/**/*.{ts,tsx,js,jsx,json,css,scss,md}" > reports/prettier-report.txt || true
+          cat reports/prettier-report.txt  # Mostrar el reporte de Prettier en los logs
 
       - name: Upload ESLint report
         uses: actions/upload-artifact@v4
@@ -44,4 +47,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: prettier-report
-          path: reports/
+          path: reports/prettier-report.txt

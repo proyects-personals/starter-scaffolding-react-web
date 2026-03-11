@@ -1,7 +1,7 @@
 name: PR CI & Auto Pull request
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened]
 
 permissions:
@@ -15,6 +15,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -25,7 +27,7 @@ jobs:
         run: npm install
 
       - name: Commitlint
-        run: npx commitlint --from=origin/${{ github.base_ref }} --to=HEAD
+        run: npx commitlint --from=origin/${{ github.event.pull_request.base.ref }} --to=HEAD
 
       - name: Lint
         run: npm run lint
@@ -43,26 +45,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
       - name: Collect commits
         run: |
-          COMMITS=$(git log origin/${{ github.base_ref }}..HEAD --pretty=format:'- %s' | sed ':a;N;$!ba;s/\n/\\n/g')
+          COMMITS=$(git log origin/${{ github.event.pull_request.base.ref }}..HEAD --pretty=format:'- %s' | sed ':a;N;$!ba;s/\n/\\n/g')
           echo "COMMITS=$COMMITS" >> $GITHUB_ENV
 
       - name: Collect first commit title
         run: |
-          FIRST_COMMIT=$(git log origin/${{ github.base_ref }}..HEAD --pretty=format:'%s' | tail -n 1)
+          FIRST_COMMIT=$(git log origin/${{ github.event.pull_request.base.ref }}..HEAD --pretty=format:'%s' | tail -n 1)
           echo "FIRST_COMMIT=$FIRST_COMMIT" >> $GITHUB_ENV
 
       - name: Collect changed files
         run: |
-          FILES=$(git diff --name-only origin/${{ github.base_ref }}..HEAD | sed ':a;N;$!ba;s/\n/\\n/g')
+          FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}..HEAD | sed ':a;N;$!ba;s/\n/\\n/g')
           echo "FILES=$FILES" >> $GITHUB_ENV
 
       - name: Detect commit types
         run: |
-          TYPES=$(git log origin/${{ github.base_ref }}..HEAD --pretty=format:'%s' | cut -d: -f1 | sort -u | tr '\n' ',' | sed 's/,$//')
+          TYPES=$(git log origin/${{ github.event.pull_request.base.ref }}..HEAD --pretty=format:'%s' | cut -d: -f1 | sort -u | tr '\n' ',' | sed 's/,$//')
           echo "TYPES=$TYPES" >> $GITHUB_ENV
 
       - name: Update PR title & body

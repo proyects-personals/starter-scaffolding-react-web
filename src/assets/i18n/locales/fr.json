@@ -1,0 +1,24 @@
+{
+  "scaffolding": {
+    "page": {
+      "title": "Page",
+      "description": "Page initial"
+    }
+  },
+  "navigation": {
+    "main": "Navigation principale",
+    "home": "Accueil",
+    "services": "Services",
+    "caseStudies": "Études de cas",
+    "stack": "Technologies",
+    "about": "À propos de moi",
+    "consultation": "PRENDRE RENDEZ-VOUS",
+    "contact": "CONTACT"
+  },
+  "footer": {
+    "description": "Solutions numériques, développement logiciel et technologie axés sur la création d'expériences modernes et évolutives.",
+    "navigation": "Navigation",
+    "connect": "Me contacter",
+    "rights": "Tous droits réservés."
+  }
+}

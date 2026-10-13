@@ -1,2 +1,2 @@
-export * from "./language.hook";
-export * from "./translate.hook";
+export * from "./use-language.hook";
+export * from "./use-translate.hook";

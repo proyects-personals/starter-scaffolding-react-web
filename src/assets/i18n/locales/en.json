@@ -1,8 +1,24 @@
 {
   "scaffolding": {
     "page": {
-      "title": "page",
-      "description": "page initial"
+      "title": "Page",
+      "description": "Initial page"
     }
+  },
+  "navigation": {
+    "main": "Main navigation",
+    "home": "Home",
+    "services": "Services",
+    "caseStudies": "Case Studies",
+    "stack": "Tech Stack",
+    "about": "About Me",
+    "consultation": "BOOK A CONSULTATION",
+    "contact": "CONTACT"
+  },
+  "footer": {
+    "description": "Digital solutions, software development and technology focused on creating modern and scalable experiences.",
+    "navigation": "Navigation",
+    "connect": "Connect with me",
+    "rights": "All rights reserved."
   }
 }

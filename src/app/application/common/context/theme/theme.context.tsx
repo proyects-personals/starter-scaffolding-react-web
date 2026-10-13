@@ -1,44 +1,45 @@
-import { useEffect, useState, type JSX } from "react";
+import { useMemo, type JSX } from "react";
 
 import {
-  resolveInitialTheme,
   resolveTheme,
-  STORAGE_KEY,
+  useThemeInitializer,
+  useThemePersistence,
+  useThemeState,
+} from "@application";
+import {
   ThemeContext,
-  type ThemeName,
+  type ThemeContextValue,
   type ThemeProviderProps,
 } from "@domain";
 
 /**
- * @description Proveedor de contexto de tema.
- *              Expone el tema actual, su nombre y una función para cambiarlo.
+ * @description Proveedor global del sistema de temas.
  *
- * @param {ThemeProviderProps} props Props del proveedor
- * @returns {JSX.Element} Proveedor de contexto de tema
+ * @param {ThemeProviderProps} props Propiedades del proveedor
+ * @returns {JSX.Element} Proveedor del contexto
+ *
+ * @author Steveen Cues
+ * @version 1.0.0
  */
 export function ThemeProvider({ children }: ThemeProviderProps): JSX.Element {
-  const [themeName, setThemeName] = useState<ThemeName>(resolveInitialTheme);
+  const { themeName, setThemeName, setTheme } = useThemeState();
 
-  /**
-   * @description Persiste el tema seleccionado en localStorage
-   *              cada vez que cambia.
-   */
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, themeName);
-  }, [themeName]);
+  useThemeInitializer(setThemeName);
+  useThemePersistence(themeName);
 
-  /**
-   * @description Cambia el tema de la aplicación.
-   * @param {ThemeName} newTheme Nuevo tema a aplicar
-   */
-  const setTheme = (newTheme: ThemeName): void => {
-    setThemeName(newTheme);
-  };
+  const theme = useMemo(() => resolveTheme(themeName), [themeName]);
 
-  const theme = resolveTheme(themeName);
+  const contextValue = useMemo<ThemeContextValue>(
+    () => ({
+      theme,
+      themeName,
+      setTheme,
+    }),
+    [theme, themeName, setTheme],
+  );
 
   return (
-    <ThemeContext.Provider value={{ theme, themeName, setTheme }}>
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );

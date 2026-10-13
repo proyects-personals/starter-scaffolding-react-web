@@ -6,7 +6,11 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
 
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
 
     "jsx": "react-jsx",
 
@@ -31,27 +35,64 @@
     "skipLibCheck": true,
 
     "baseUrl": "./",
+
     "paths": {
-      "@/*": ["src/*"],
+      "@/*": [
+        "src/*"
+      ],
 
-      "@domain": ["src/app/domain/index.ts"],
-      "@domain/*": ["src/app/domain/*"],
+      "@domain": [
+        "src/app/domain/index.ts"
+      ],
+      "@domain/*": [
+        "src/app/domain/*"
+      ],
 
-      "@application": ["src/app/application/index.ts"],
-      "@application/*": ["src/app/application/*"],
+      "@application": [
+        "src/app/application/index.ts"
+      ],
+      "@application/*": [
+        "src/app/application/*"
+      ],
 
-      "@infrastructure": ["src/app/infrastructure/index.ts"],
-      "@infrastructure/*": ["src/app/infrastructure/*"],
+      "@infrastructure": [
+        "src/app/infrastructure/index.ts"
+      ],
+      "@infrastructure/*": [
+        "src/app/infrastructure/*"
+      ],
 
-      "@presentation": ["src/app/presentation/index.ts"],
-      "@presentation/*": ["src/app/presentation/*"],
+      "@presentation": [
+        "src/app/presentation/index.ts"
+      ],
+      "@presentation/*": [
+        "src/app/presentation/*"
+      ],
 
-      "@assets": ["src/assets/index.ts"],
-      "@assets/*": ["src/assets/*"],
+      "@shared": [
+        "src/app/presentation/shared/index.ts"
+      ],
+      "@shared/*": [
+        "src/app/presentation/shared/*"
+      ],
 
-      "@i18n": ["src/assets/i18n/index.ts"],
-      "@i18n/*": ["src/assets/i18n/*"]
+      "@assets": [
+        "src/assets/index.ts"
+      ],
+      "@assets/*": [
+        "src/assets/*"
+      ],
+
+      "@i18n": [
+        "src/assets/i18n/index.ts"
+      ],
+      "@i18n/*": [
+        "src/assets/i18n/*"
+      ]
     }
   },
-  "include": ["src"]
+
+  "include": [
+    "src"
+  ]
 }

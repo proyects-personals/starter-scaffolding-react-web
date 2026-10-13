@@ -1,76 +1,64 @@
-import { useState, useEffect, type JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 
+import { resolveInitialLanguage, storeLanguage } from "@application";
 import i18n from "@assets/i18n";
 import {
-  SUPPORTED_LANGUAGES,
   TranslateContext,
   type Language,
   type TranslateProviderProps,
 } from "@domain";
 
 /**
- * @description Proveedor de contexto que permite cambiar y obtener el idioma actual de la aplicación.
- *              Sincroniza con i18next y guarda la preferencia en localStorage.
- * @version 1.0.1
+ * @description Proveedor global del sistema de traducción.
+ * Sincroniza el idioma con i18next y persiste la preferencia
+ * utilizando almacenamiento cifrado.
+ *
+ * @param {TranslateProviderProps} props Propiedades del proveedor
+ * @returns {JSX.Element} Proveedor del contexto
+ *
  * @author Steveen Cues
+ * @version 1.0.0
  */
-export const TranslateProvider = ({
+export function TranslateProvider({
   children,
-}: TranslateProviderProps): JSX.Element => {
-  const LANGUAGE_CODE_LENGTH = 2;
+}: TranslateProviderProps): JSX.Element {
+  const [language, setLanguage] = useState<Language>("es");
 
-  /**
-   * @description Type guard que verifica si una cadena es un idioma soportado.
-   * @param {string} lang
-   * @returns {lang is Language}
-   */
-  function isLanguage(lang: string): lang is Language {
-    return SUPPORTED_LANGUAGES.some((supported) => supported === lang);
-  }
+  useEffect((): (() => void) => {
+    let isMounted = true;
 
-  /**
-   * @description Obtiene el idioma inicial de la aplicación.
-   *              1. Revisa localStorage.
-   *              2. Detecta el idioma del navegador.
-   *              3. Si no está soportado, devuelve 'es' por defecto.
-   * @returns {Language} Idioma inicial
-   */
-  const getInitialLanguage = (): Language => {
-    const stored = localStorage.getItem("app_language");
-    if (stored !== null && isLanguage(stored)) {
-      return stored;
-    }
+    const initializeLanguage = async (): Promise<void> => {
+      const initialLanguage = await resolveInitialLanguage();
 
-    const browserLang = navigator.language.slice(0, LANGUAGE_CODE_LENGTH);
-    if (isLanguage(browserLang)) {
-      return browserLang;
-    }
+      if (isMounted) {
+        setLanguage(initialLanguage);
+      }
+    };
 
-    return "es";
-  };
+    void initializeLanguage();
 
-  const [language, setLanguage] = useState<Language>(getInitialLanguage);
+    return (): void => {
+      isMounted = false;
+    };
+  }, []);
 
-  useEffect(() => {
-    i18n.changeLanguage(language);
-    localStorage.setItem("app_language", language);
+  useEffect((): void => {
+    void i18n.changeLanguage(language);
+    void storeLanguage(language);
   }, [language]);
 
-  /**
-   * @description Cambia el idioma de la aplicación de manera segura.
-   *              Solo permite idiomas soportados.
-   * @param {string} lang Idioma a cambiar
-   */
-  const changeTranslate = (lang: string): void => {
-    if (!isLanguage(lang)) {
-      return;
-    }
-    setLanguage(lang);
+  const changeTranslate = (newLanguage: Language): void => {
+    setLanguage(newLanguage);
   };
 
   return (
-    <TranslateContext.Provider value={{ language, changeTranslate }}>
+    <TranslateContext.Provider
+      value={{
+        language,
+        changeTranslate,
+      }}
+    >
       {children}
     </TranslateContext.Provider>
   );
-};
+}

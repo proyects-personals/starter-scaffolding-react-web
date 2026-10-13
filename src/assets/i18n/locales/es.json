@@ -1,8 +1,24 @@
 {
   "scaffolding": {
     "page": {
-      "title": "pagina",
-      "description": "pagina de inicial"
+      "title": "Página",
+      "description": "Página inicial"
     }
+  },
+  "navigation": {
+    "main": "Navegación principal",
+    "home": "Inicio",
+    "services": "Servicios",
+    "caseStudies": "Casos de estudio",
+    "stack": "Tecnologías",
+    "about": "Sobre mí",
+    "consultation": "AGENDAR CONSULTA",
+    "contact": "CONTACTO"
+  },
+  "footer": {
+    "description": "Soluciones digitales, desarrollo de software y tecnología enfocada en crear experiencias modernas y escalables.",
+    "navigation": "Navegación",
+    "connect": "Conecta conmigo",
+    "rights": "Todos los derechos reservados."
   }
 }

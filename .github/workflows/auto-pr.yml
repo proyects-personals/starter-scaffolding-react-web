@@ -1,4 +1,5 @@
-name: PR CI & Auto Pull request
+
+name: PR CI & Auto Pull Request
 
 on:
   pull_request:
@@ -10,22 +11,26 @@ permissions:
 
 jobs:
   ci:
+    name: CI Validation
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
-      - name: Install deps
-        run: npm install
+      - name: Install dependencies
+        run: npm ci
 
       - name: Commitlint
-        run: npx commitlint --from=origin/${{ github.base_ref }} --to=HEAD
+        run: npx commitlint --from="origin/${{ github.base_ref }}" --to=HEAD
 
       - name: Lint
         run: npm run lint
@@ -37,67 +42,104 @@ jobs:
         run: npm audit --audit-level=high
 
   update-pr:
+    name: Update Pull Request
     needs: ci
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Collect commits
+      - name: Collect pull request metadata
+        id: metadata
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          COMMITS=$(git log origin/${{ github.base_ref }}..HEAD --pretty=format:'- %s' | sed ':a;N;$!ba;s/\n/\\n/g')
-          echo "COMMITS=$COMMITS" >> $GITHUB_ENV
+          set -euo pipefail
 
-      - name: Collect first commit title
-        run: |
-          FIRST_COMMIT=$(git log origin/${{ github.base_ref }}..HEAD --pretty=format:'%s' | tail -n 1)
-          echo "FIRST_COMMIT=$FIRST_COMMIT" >> $GITHUB_ENV
+          git fetch origin "$BASE_REF"
 
-      - name: Collect changed files
-        run: |
-          FILES=$(git diff --name-only origin/${{ github.base_ref }}..HEAD | sed ':a;N;$!ba;s/\n/\\n/g')
-          echo "FILES=$FILES" >> $GITHUB_ENV
+          COMMITS="$(git log "origin/$BASE_REF..HEAD" --pretty=format:'- %s')"
+          FIRST_COMMIT="$(git log "origin/$BASE_REF..HEAD" --pretty=format:'%s' | tail -n 1)"
+          FILES="$(git diff --name-only "origin/$BASE_REF...HEAD")"
+          TYPES="$(git log "origin/$BASE_REF..HEAD" --pretty=format:'%s' \
+            | sed -nE 's/^([a-zA-Z]+)(\([^)]*\))?!?:.*/\1/p' \
+            | sort -u \
+            | paste -sd ', ' -)"
 
-      - name: Detect commit types
-        run: |
-          TYPES=$(git log origin/${{ github.base_ref }}..HEAD --pretty=format:'%s' | cut -d: -f1 | sort -u | tr '\n' ',' | sed 's/,$//')
-          echo "TYPES=$TYPES" >> $GITHUB_ENV
+          {
+            echo "commits<<EOF"
+            printf '%s\n' "${COMMITS:-- Sin commits}"
+            echo "EOF"
 
-      - name: Update PR title & body
+            echo "files<<EOF"
+            printf '%s\n' "${FILES:-- Sin cambios}"
+            echo "EOF"
+
+            echo "first_commit<<EOF"
+            printf '%s\n' "${FIRST_COMMIT:-Pull request update}"
+            echo "EOF"
+
+            echo "types<<EOF"
+            printf '%s\n' "${TYPES:-chore}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Update PR title and description
         uses: actions/github-script@v7
+        env:
+          COMMITS: ${{ steps.metadata.outputs.commits }}
+          FILES: ${{ steps.metadata.outputs.files }}
+          FIRST_COMMIT: ${{ steps.metadata.outputs.first_commit }}
+          TYPES: ${{ steps.metadata.outputs.types }}
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const pr = context.payload.pull_request
+            const pr = context.payload.pull_request;
 
-            const commits = (process.env.COMMITS || '- Sin commits').replace(/\\n/g, '\n')
-            const files = (process.env.FILES || '- Sin cambios').replace(/\\n/g, '\n')
-            const firstCommit = process.env.FIRST_COMMIT || pr.head.ref
-            const types = process.env.TYPES || 'chore'
+            if (!pr) {
+              throw new Error("Pull request context is unavailable.");
+            }
 
-            const title = firstCommit
+            const commits = process.env.COMMITS || "- Sin commits";
+            const files = process.env.FILES || "- Sin cambios";
+            const firstCommit = process.env.FIRST_COMMIT || pr.head.ref;
+            const types = process.env.TYPES || "chore";
 
-            const body =
-              '## 🧾 Descripción\n' +
-              'Este PR incluye los siguientes cambios:\n\n' +
-              '## 🔄 Cambios realizados\n' +
-              commits + '\n\n' +
-              '## 📂 Archivos modificados\n' +
-              files.split('\n').map(f => `- \`${f}\``).join('\n') + '\n\n' +
-              '## 🏷️ Tipo de cambio\n' +
-              `\`${types}\`\n\n` +
-              '## ☑️ Checklist CI\n' +
-              '- [x] Commitlint\n' +
-              '- [x] Lint\n' +
-              '- [x] Tests\n' +
-              '- [x] Security audit\n\n' +
-              '_PR actualizado automáticamente por CI_ 🤖'
+            const formattedFiles = files
+              .split("\n")
+              .filter((file) => file.length > 0)
+              .map((file) => `- \`${file}\``)
+              .join("\n") || "- Sin cambios";
+
+            const body = [
+              "## 🧾 Descripción",
+              "Este PR incluye los siguientes cambios:",
+              "",
+              "## 🔄 Cambios realizados",
+              commits,
+              "",
+              "## 📂 Archivos modificados",
+              formattedFiles,
+              "",
+              "## 🏷️ Tipo de cambio",
+              `\`${types}\``,
+              "",
+              "## ☑️ Checklist CI",
+              "- [x] Commitlint",
+              "- [x] Lint",
+              "- [x] Tests",
+              "- [x] Security audit",
+              "",
+              "_PR actualizado automáticamente por CI_ 🤖",
+            ].join("\n");
 
             await github.rest.pulls.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: pr.number,
-              title,
-              body
-            })
+              title: firstCommit,
+              body,
+            });

@@ -9,6 +9,11 @@ permissions:
   contents: read
   pull-requests: write
 
+# Suprime únicamente la advertencia DEP0040 de Node.js.
+# No actualiza ni cambia las versiones de las acciones.
+env:
+  NODE_OPTIONS: --disable-warning=DEP0040
+
 jobs:
   ci:
     name: CI Validation

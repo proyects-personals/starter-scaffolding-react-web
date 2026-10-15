@@ -1,3 +1,4 @@
+
 name: Security & Dependencies
 
 on:
@@ -7,9 +8,14 @@ on:
     branches: [main, develop]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   security:
+    name: Security and Dependency Audit
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -23,17 +29,47 @@ jobs:
         run: npm install
 
       - name: Audit NPM packages
+        id: audit
+        shell: bash
         run: |
           mkdir -p reports
+
+          set +e
           npm audit --json > reports/npm-audit.json
-          cat reports/npm-audit.json
+          AUDIT_EXIT_CODE=$?
+          set -e
+
+          echo "exit_code=$AUDIT_EXIT_CODE" >> "$GITHUB_OUTPUT"
+
+          if [ -s reports/npm-audit.json ]; then
+            cat reports/npm-audit.json
+          else
+            echo "::warning::npm audit did not generate a report."
+          fi
+
+          if [ "$AUDIT_EXIT_CODE" -ne 0 ]; then
+            echo "::warning::npm audit returned exit code $AUDIT_EXIT_CODE."
+            echo "::warning::Review the security report for vulnerabilities or audit errors."
+          fi
 
       - name: Check outdated packages
-        run: |
-          npm outdated || true
+        if: always()
+        run: npm outdated || true
 
       - name: Upload security report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: security-report
           path: reports/npm-audit.json
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Enforce security audit result
+        if: always() && steps.audit.outputs.exit_code != '0'
+        env:
+          AUDIT_EXIT_CODE: ${{ steps.audit.outputs.exit_code }}
+        run: |
+          echo "::error::Security audit failed with exit code ${AUDIT_EXIT_CODE}."
+          echo "Review the uploaded security report and resolve the reported issues."
+          exit 1

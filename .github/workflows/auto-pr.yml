@@ -10,7 +10,6 @@ permissions:
   pull-requests: write
 
 # Suprime únicamente la advertencia DEP0040 de Node.js.
-# No actualiza ni cambia las versiones de las acciones.
 env:
   NODE_OPTIONS: --disable-warning=DEP0040
 
@@ -29,10 +28,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          package-manager-cache: false
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Commitlint
         run: npx commitlint --from="origin/${{ github.base_ref }}" --to=HEAD
@@ -61,6 +60,7 @@ jobs:
         id: metadata
         env:
           BASE_REF: ${{ github.base_ref }}
+        shell: bash
         run: |
           set -euo pipefail
 

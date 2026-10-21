@@ -58,7 +58,6 @@
     ]
   },
   "dependencies": {
-    "@steveencues/starter-react-ui": "file:resource/steveencues-starter-react-ui-1.0.7.tgz",
     "@tailwindcss/vite": "^4.2.1",
     "i18next": "^25.8.13",
     "react-i18next": "^16.5.4",

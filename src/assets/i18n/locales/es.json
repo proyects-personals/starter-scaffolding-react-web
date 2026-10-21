@@ -1,8 +1,150 @@
 {
-  "scaffolding": {
-    "page": {
-      "title": "Página",
-      "description": "Página inicial"
+  "themes": {
+    "light": {
+      "name": "Claro",
+      "description": "Un tema claro con superficies limpias y acentos violetas."
+    },
+    "dark": {
+      "name": "Oscuro",
+      "description": "Un tema oscuro con acentos violetas y superficies profundas."
+    },
+    "native": {
+      "cupcake": {
+        "name": "Cupcake",
+        "description": "Un tema suave con colores pastel."
+      },
+      "bumblebee": {
+        "name": "Abejorro",
+        "description": "Un tema brillante en amarillo y negro."
+      },
+      "emerald": {
+        "name": "Esmeralda",
+        "description": "Un tema limpio con acentos esmeralda."
+      },
+      "corporate": {
+        "name": "Corporativo",
+        "description": "Un tema profesional orientado a negocios."
+      },
+      "synthwave": {
+        "name": "Synthwave",
+        "description": "Un tema retro de neón inspirado en los años ochenta."
+      },
+      "retro": {
+        "name": "Retro",
+        "description": "Un tema inspirado en estilos vintage."
+      },
+      "cyberpunk": {
+        "name": "Cyberpunk",
+        "description": "Un tema futurista con colores vibrantes."
+      },
+      "valentine": {
+        "name": "San Valentín",
+        "description": "Un tema romántico en tonos rosados."
+      },
+      "halloween": {
+        "name": "Halloween",
+        "description": "Un tema oscuro con acentos naranjas."
+      },
+      "garden": {
+        "name": "Jardín",
+        "description": "Un tema natural con colores suaves."
+      },
+      "forest": {
+        "name": "Bosque",
+        "description": "Un tema verde inspirado en la naturaleza."
+      },
+      "aqua": {
+        "name": "Acuático",
+        "description": "Un tema fresco inspirado en el agua."
+      },
+      "lofi": {
+        "name": "Lo-fi",
+        "description": "Un tema minimalista con colores apagados."
+      },
+      "pastel": {
+        "name": "Pastel",
+        "description": "Un tema delicado con colores pastel."
+      },
+      "fantasy": {
+        "name": "Fantasía",
+        "description": "Un tema colorido con un estilo divertido."
+      },
+      "wireframe": {
+        "name": "Estructura alámbrica",
+        "description": "Un tema minimalista de estilo wireframe."
+      },
+      "black": {
+        "name": "Negro",
+        "description": "Un tema negro de alto contraste."
+      },
+      "luxury": {
+        "name": "Lujo",
+        "description": "Un tema elegante con tonos lujosos."
+      },
+      "dracula": {
+        "name": "Drácula",
+        "description": "Un tema oscuro con acentos intensos."
+      },
+      "cmyk": {
+        "name": "CMYK",
+        "description": "Un tema colorido inspirado en la impresión."
+      },
+      "autumn": {
+        "name": "Otoño",
+        "description": "Un tema cálido inspirado en los colores otoñales."
+      },
+      "business": {
+        "name": "Negocios",
+        "description": "Un tema profesional y sobrio."
+      },
+      "acid": {
+        "name": "Ácido",
+        "description": "Un tema atrevido con colores brillantes."
+      },
+      "lemonade": {
+        "name": "Limonada",
+        "description": "Un tema fresco con colores cítricos."
+      },
+      "night": {
+        "name": "Noche",
+        "description": "Un tema oscuro para entornos con poca luz."
+      },
+      "coffee": {
+        "name": "Café",
+        "description": "Un tema cálido con tonos inspirados en el café."
+      },
+      "winter": {
+        "name": "Invierno",
+        "description": "Un tema frío inspirado en el invierno."
+      },
+      "dim": {
+        "name": "Tenue",
+        "description": "Un tema oscuro con tonos atenuados."
+      },
+      "nord": {
+        "name": "Nórdico",
+        "description": "Un tema frío inspirado en los colores nórdicos."
+      },
+      "sunset": {
+        "name": "Atardecer",
+        "description": "Un tema cálido inspirado en los colores del atardecer."
+      }
+    }
+  },
+  "preferences": {
+    "appearance": {
+      "theme": {
+        "title": "Temas disponibles",
+        "selected": "Tema seleccionado",
+        "search": "Buscar temas...",
+        "empty": "No se encontraron temas.",
+        "results": "temas"
+      }
+    }
+  },
+  "common": {
+    "results": {
+      "of": "de"
     }
   },
   "navigation": {

@@ -1,13 +1,12 @@
-import { AppLayout } from "@presentation";
-
+import { ThemeSelector } from "@steveencues/starter-react-ui";
 import type { JSX } from "react";
 
 export default function App(): JSX.Element {
   return (
-    <AppLayout>
-      <section className="flex min-h-[calc(100vh-5rem)] items-center justify-center">
-        <div className="w-full max-w-md">{/* Contenido */}</div>
-      </section>
-    </AppLayout>
+    <main className="min-h-screen bg-base-200 p-6 text-base-content">
+      <div className="mx-auto max-w-md">
+        <ThemeSelector />
+      </div>
+    </main>
   );
 }

@@ -14,7 +14,10 @@
     "prepare": "husky install",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "ui:install:local": "npm install ./resource/steveencues-starter-react-ui-1.0.0.tgz",
+    "ui:uninstall": "npm uninstall @steveencues/starter-react-ui",
+    "ui:install:published": "npm install @steveencues/starter-react-ui@latest"
   },
   "overrides": {
     "@istanbuljs/load-nyc-config": {
@@ -55,6 +58,7 @@
     ]
   },
   "dependencies": {
+    "@steveencues/starter-react-ui": "file:resource/steveencues-starter-react-ui-1.0.7.tgz",
     "@tailwindcss/vite": "^4.2.1",
     "i18next": "^25.8.13",
     "react-i18next": "^16.5.4",

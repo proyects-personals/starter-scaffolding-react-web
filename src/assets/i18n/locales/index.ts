@@ -1,1 +1,1 @@
-export { default } from "./local";
+export * from "./translations";

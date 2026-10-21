@@ -1,8 +1,150 @@
 {
-  "scaffolding": {
-    "page": {
-      "title": "Page",
-      "description": "Initial page"
+  "themes": {
+    "light": {
+      "name": "Light",
+      "description": "A light theme with clean surfaces and violet accents."
+    },
+    "dark": {
+      "name": "Dark",
+      "description": "A dark theme with violet accents and deep surfaces."
+    },
+    "native": {
+      "cupcake": {
+        "name": "Cupcake",
+        "description": "A soft pastel theme."
+      },
+      "bumblebee": {
+        "name": "Bumblebee",
+        "description": "A bright yellow and black theme."
+      },
+      "emerald": {
+        "name": "Emerald",
+        "description": "A clean theme with emerald accents."
+      },
+      "corporate": {
+        "name": "Corporate",
+        "description": "A professional business-oriented theme."
+      },
+      "synthwave": {
+        "name": "Synthwave",
+        "description": "A retro neon theme inspired by the 1980s."
+      },
+      "retro": {
+        "name": "Retro",
+        "description": "A vintage-inspired theme."
+      },
+      "cyberpunk": {
+        "name": "Cyberpunk",
+        "description": "A vibrant futuristic theme."
+      },
+      "valentine": {
+        "name": "Valentine",
+        "description": "A romantic pink theme."
+      },
+      "halloween": {
+        "name": "Halloween",
+        "description": "A dark theme with orange accents."
+      },
+      "garden": {
+        "name": "Garden",
+        "description": "A natural theme with soft colors."
+      },
+      "forest": {
+        "name": "Forest",
+        "description": "A nature-inspired green theme."
+      },
+      "aqua": {
+        "name": "Aqua",
+        "description": "A refreshing aquatic theme."
+      },
+      "lofi": {
+        "name": "Lo-fi",
+        "description": "A minimalist theme with muted colors."
+      },
+      "pastel": {
+        "name": "Pastel",
+        "description": "A gentle theme with pastel colors."
+      },
+      "fantasy": {
+        "name": "Fantasy",
+        "description": "A colorful theme with a playful style."
+      },
+      "wireframe": {
+        "name": "Wireframe",
+        "description": "A minimal wireframe-style theme."
+      },
+      "black": {
+        "name": "Black",
+        "description": "A high-contrast black theme."
+      },
+      "luxury": {
+        "name": "Luxury",
+        "description": "An elegant theme with luxurious tones."
+      },
+      "dracula": {
+        "name": "Dracula",
+        "description": "A dark theme with vivid accents."
+      },
+      "cmyk": {
+        "name": "CMYK",
+        "description": "A colorful print-inspired theme."
+      },
+      "autumn": {
+        "name": "Autumn",
+        "description": "A warm theme inspired by autumn colors."
+      },
+      "business": {
+        "name": "Business",
+        "description": "A restrained professional theme."
+      },
+      "acid": {
+        "name": "Acid",
+        "description": "A bold theme with bright colors."
+      },
+      "lemonade": {
+        "name": "Lemonade",
+        "description": "A fresh theme with citrus-inspired colors."
+      },
+      "night": {
+        "name": "Night",
+        "description": "A dark theme for low-light environments."
+      },
+      "coffee": {
+        "name": "Coffee",
+        "description": "A warm theme with coffee-inspired tones."
+      },
+      "winter": {
+        "name": "Winter",
+        "description": "A cool theme inspired by winter."
+      },
+      "dim": {
+        "name": "Dim",
+        "description": "A subdued dark theme."
+      },
+      "nord": {
+        "name": "Nord",
+        "description": "A cool theme inspired by Nordic colors."
+      },
+      "sunset": {
+        "name": "Sunset",
+        "description": "A warm theme inspired by sunset colors."
+      }
+    }
+  },
+  "preferences": {
+    "appearance": {
+      "theme": {
+        "title": "Available themes",
+        "selected": "Selected theme",
+        "search": "Search themes...",
+        "empty": "No themes found.",
+        "results": "themes"
+      }
+    }
+  },
+  "common": {
+    "results": {
+      "of": "of"
     }
   },
   "navigation": {

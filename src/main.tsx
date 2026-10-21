@@ -27,9 +27,7 @@ ReactDOM.createRoot(container).render(
       fallbackLanguage="en"
       languageEncryptionKey="your-language-encryption-key"
     >
-      <ThemeProvider
-        themes={appThemes} initialTheme={INITIAL_THEME}
-      >
+      <ThemeProvider themes={appThemes} initialTheme={INITIAL_THEME}>
         <App />
       </ThemeProvider>
     </TranslateProvider>

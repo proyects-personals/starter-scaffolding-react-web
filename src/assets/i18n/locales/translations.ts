@@ -1,6 +1,8 @@
-import type { TranslationCatalog } from "@steveencues/starter-react-ui";
 import en from "./en.json";
 import es from "./es.json";
+import fr from "./fr.json";
+
+import type { TranslationCatalog } from "@steveencues/starter-react-ui";
 
 /**
  * @description Catalogo de traducciones identificado por idioma.
@@ -10,4 +12,5 @@ import es from "./es.json";
 export const translations: TranslationCatalog = {
   es,
   en,
+  fr,
 };

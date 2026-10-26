@@ -138,14 +138,48 @@
         "selected": "Tema seleccionado",
         "search": "Buscar temas...",
         "empty": "No se encontraron temas.",
+        "close": "Cerrar selector de temas",
         "results": "temas"
       }
+    }
+  },
+  "showcase": {
+    "brand": "Starter UI",
+    "eyebrow": "Componentes reutilizables",
+    "title": "Prueba los componentes de la interfaz",
+    "description": "Cambia el idioma o el tema y comprueba cómo se actualizan los componentes conectados al proveedor de traducciones.",
+    "components": "Componentes",
+    "preferences": "Preferencias",
+    "buttons": {
+      "title": "Botones",
+      "description": "Variantes visuales e interacción con texto traducido.",
+      "primary": "Probar acción",
+      "outlined": "Botón delineado",
+      "disabled": "Deshabilitado",
+      "feedback": "¡El botón funciona y este mensaje también está traducido!"
+    },
+    "navigation": {
+      "title": "Encabezado y navegación",
+      "description": "El encabezado combina el logo, enlaces y menú responsive.",
+      "hint": "Prueba el menú en una ventana estrecha y cambia el idioma."
+    },
+    "theme": {
+      "title": "Selector de tema",
+      "description": "Elige un tema para cambiar el aspecto de la interfaz."
+    },
+    "language": {
+      "title": "Selector de idioma",
+      "description": "Selecciona español, inglés o francés para traducir la página."
     }
   },
   "common": {
     "results": {
       "of": "de"
     }
+  },
+  "menu": {
+    "open": "Abrir menú",
+    "close": "Cerrar menú"
   },
   "navigation": {
     "main": "Navegación principal",

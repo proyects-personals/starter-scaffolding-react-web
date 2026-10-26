@@ -1,4 +1,186 @@
 {
+  "themes": {
+    "light": {
+      "name": "Clair",
+      "description": "Un thème clair aux surfaces épurées et aux accents violets."
+    },
+    "dark": {
+      "name": "Sombre",
+      "description": "Un thème sombre aux accents violets et aux surfaces profondes."
+    },
+    "native": {
+      "cupcake": {
+        "name": "Cupcake",
+        "description": "Un thème pastel et doux."
+      },
+      "bumblebee": {
+        "name": "Bourdon",
+        "description": "Un thème lumineux jaune et noir."
+      },
+      "emerald": {
+        "name": "Émeraude",
+        "description": "Un thème épuré aux accents émeraude."
+      },
+      "corporate": {
+        "name": "Entreprise",
+        "description": "Un thème professionnel pour les affaires."
+      },
+      "synthwave": {
+        "name": "Synthwave",
+        "description": "Un thème néon rétro inspiré des années 80."
+      },
+      "retro": {
+        "name": "Rétro",
+        "description": "Un thème inspiré des styles vintage."
+      },
+      "cyberpunk": {
+        "name": "Cyberpunk",
+        "description": "Un thème futuriste aux couleurs vives."
+      },
+      "valentine": {
+        "name": "Saint-Valentin",
+        "description": "Un thème romantique rose."
+      },
+      "halloween": {
+        "name": "Halloween",
+        "description": "Un thème sombre aux accents orange."
+      },
+      "garden": {
+        "name": "Jardin",
+        "description": "Un thème naturel aux couleurs douces."
+      },
+      "forest": {
+        "name": "Forêt",
+        "description": "Un thème vert inspiré de la nature."
+      },
+      "aqua": {
+        "name": "Aqua",
+        "description": "Un thème frais inspiré de l'eau."
+      },
+      "lofi": {
+        "name": "Lo-fi",
+        "description": "Un thème minimaliste aux couleurs discrètes."
+      },
+      "pastel": {
+        "name": "Pastel",
+        "description": "Un thème délicat aux couleurs pastel."
+      },
+      "fantasy": {
+        "name": "Fantaisie",
+        "description": "Un thème coloré et ludique."
+      },
+      "wireframe": {
+        "name": "Fil de fer",
+        "description": "Un thème minimaliste de style filaire."
+      },
+      "black": {
+        "name": "Noir",
+        "description": "Un thème noir à contraste élevé."
+      },
+      "luxury": {
+        "name": "Luxe",
+        "description": "Un thème élégant aux tons luxueux."
+      },
+      "dracula": {
+        "name": "Dracula",
+        "description": "Un thème sombre aux accents intenses."
+      },
+      "cmyk": {
+        "name": "CMJN",
+        "description": "Un thème coloré inspiré de l'impression."
+      },
+      "autumn": {
+        "name": "Automne",
+        "description": "Un thème chaleureux inspiré de l'automne."
+      },
+      "business": {
+        "name": "Affaires",
+        "description": "Un thème professionnel et sobre."
+      },
+      "acid": {
+        "name": "Acide",
+        "description": "Un thème audacieux aux couleurs vives."
+      },
+      "lemonade": {
+        "name": "Limonade",
+        "description": "Un thème frais aux accents citronnés."
+      },
+      "night": {
+        "name": "Nuit",
+        "description": "Un thème sombre pour les environnements peu éclairés."
+      },
+      "coffee": {
+        "name": "Café",
+        "description": "Un thème chaleureux aux tons café."
+      },
+      "winter": {
+        "name": "Hiver",
+        "description": "Un thème froid inspiré de l'hiver."
+      },
+      "dim": {
+        "name": "Atténué",
+        "description": "Un thème sombre aux tons adoucis."
+      },
+      "nord": {
+        "name": "Nord",
+        "description": "Un thème froid inspiré des couleurs nordiques."
+      },
+      "sunset": {
+        "name": "Coucher de soleil",
+        "description": "Un thème chaleureux inspiré du crépuscule."
+      }
+    }
+  },
+  "preferences": {
+    "appearance": {
+      "theme": {
+        "title": "Thèmes disponibles",
+        "selected": "Thème sélectionné",
+        "search": "Rechercher des thèmes...",
+        "empty": "Aucun thème trouvé.",
+        "close": "Fermer le sélecteur de thème",
+        "results": "thèmes"
+      }
+    }
+  },
+  "showcase": {
+    "brand": "Starter UI",
+    "eyebrow": "Composants réutilisables",
+    "title": "Découvrez les composants de l'interface",
+    "description": "Changez de langue ou de thème et observez la mise à jour des composants connectés au fournisseur de traductions.",
+    "components": "Composants",
+    "preferences": "Préférences",
+    "buttons": {
+      "title": "Boutons",
+      "description": "Variantes visuelles et interaction avec du texte traduit.",
+      "primary": "Tester l'action",
+      "outlined": "Bouton contouré",
+      "disabled": "Désactivé",
+      "feedback": "Le bouton fonctionne et ce message est également traduit !"
+    },
+    "navigation": {
+      "title": "En-tête et navigation",
+      "description": "L'en-tête combine un logo, des liens et un menu adaptatif.",
+      "hint": "Essayez le menu dans une fenêtre étroite et changez de langue."
+    },
+    "theme": {
+      "title": "Sélecteur de thème",
+      "description": "Choisissez un thème pour modifier l'apparence de l'interface."
+    },
+    "language": {
+      "title": "Sélecteur de langue",
+      "description": "Choisissez le français, l'anglais ou l'espagnol pour traduire la page."
+    }
+  },
+  "common": {
+    "results": {
+      "of": "sur"
+    }
+  },
+  "menu": {
+    "open": "Ouvrir le menu",
+    "close": "Fermer le menu"
+  },
   "scaffolding": {
     "page": {
       "title": "Page",

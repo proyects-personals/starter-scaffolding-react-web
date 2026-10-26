@@ -138,14 +138,48 @@
         "selected": "Selected theme",
         "search": "Search themes...",
         "empty": "No themes found.",
+        "close": "Close theme selector",
         "results": "themes"
       }
+    }
+  },
+  "showcase": {
+    "brand": "Starter UI",
+    "eyebrow": "Reusable components",
+    "title": "Explore the interface components",
+    "description": "Change the language or theme and see how components connected to the translation provider update.",
+    "components": "Components",
+    "preferences": "Preferences",
+    "buttons": {
+      "title": "Buttons",
+      "description": "Visual variants and interaction with translated text.",
+      "primary": "Try the action",
+      "outlined": "Outlined button",
+      "disabled": "Disabled",
+      "feedback": "The button works, and this message is translated too!"
+    },
+    "navigation": {
+      "title": "Header and navigation",
+      "description": "The header combines a logo, links, and a responsive menu.",
+      "hint": "Try the menu in a narrow window and change the language."
+    },
+    "theme": {
+      "title": "Theme selector",
+      "description": "Choose a theme to change the interface appearance."
+    },
+    "language": {
+      "title": "Language selector",
+      "description": "Select English, Spanish, or French to translate the page."
     }
   },
   "common": {
     "results": {
       "of": "of"
     }
+  },
+  "menu": {
+    "open": "Open menu",
+    "close": "Close menu"
   },
   "navigation": {
     "main": "Main navigation",

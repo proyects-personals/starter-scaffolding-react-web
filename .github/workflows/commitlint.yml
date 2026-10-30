@@ -5,32 +5,32 @@ on:
     paths-ignore:
       - "README.md"
 
+permissions:
+  contents: read
+
+concurrency:
+  group: commitlint-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   commitlint:
+    name: Validar mensajes de commit
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Validate commit messages and generate report
-        run: |
-          mkdir -p reports
-          # redirige la salida de commitlint a un archivo txt
-          npx @commitlint/cli --from=${{ github.event.pull_request.base.sha }} --to=HEAD > reports/commitlint-report.txt || true
-          cat reports/commitlint-report.txt
-
-      - name: Upload commitlint report
-        uses: actions/upload-artifact@v4
-        with:
-          name: commitlint-report
-          path: reports/commitlint-report.txt
+      - name: Validate commit messages
+        run: npx commitlint --from="origin/${{ github.base_ref }}" --to=HEAD --verbose

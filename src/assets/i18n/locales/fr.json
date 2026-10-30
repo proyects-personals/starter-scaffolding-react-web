@@ -8,6 +8,14 @@
       "name": "Sombre",
       "description": "Un thème sombre aux accents violets et aux surfaces profondes."
     },
+    "magenta": {
+      "name": "Magenta",
+      "description": "Un thème magenta professionnel orienté vers une identité créative et technologique."
+    },
+    "semiDark": {
+      "name": "Semi Sombre",
+      "description": "Un thème semi-sombre professionnel aux accents bleus et ardoise."
+    },
     "native": {
       "cupcake": {
         "name": "Cupcake",

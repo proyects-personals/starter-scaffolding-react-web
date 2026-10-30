@@ -34,60 +34,65 @@
 
     "skipLibCheck": true,
 
-    "baseUrl": "./",
-
     "paths": {
       "@/*": [
-        "src/*"
+        "./src/*"
+      ],
+
+      "@satoshi-rc-ui": [
+        "./node_modules/satoshi-rc-ui/dist/index.d.ts"
+      ],
+      "@satoshi-rc-ui/*": [
+        "./node_modules/satoshi-rc-ui/dist/*"
       ],
 
       "@domain": [
-        "src/app/domain/index.ts"
+        "./src/app/domain/index.ts"
       ],
       "@domain/*": [
-        "src/app/domain/*"
+        "./src/app/domain/*"
       ],
 
       "@application": [
-        "src/app/application/index.ts"
+        "./src/app/application/index.ts"
       ],
       "@application/*": [
-        "src/app/application/*"
+        "./src/app/application/*"
       ],
 
       "@infrastructure": [
-        "src/app/infrastructure/index.ts"
+        "./src/app/infrastructure/index.ts"
       ],
       "@infrastructure/*": [
-        "src/app/infrastructure/*"
+        "./src/app/infrastructure/*"
       ],
 
       "@presentation": [
-        "src/app/presentation/index.ts"
+        "./src/app/presentation/index.ts"
       ],
       "@presentation/*": [
-        "src/app/presentation/*"
+        "./src/app/presentation/*"
       ],
 
       "@shared": [
-        "src/app/presentation/shared/index.ts"
+        "./src/app/presentation/shared/index.ts"
       ],
       "@shared/*": [
-        "src/app/presentation/shared/*"
+        "./src/app/presentation/shared/*"
       ],
 
       "@assets": [
-        "src/assets/index.ts"
+        "./src/assets/index.ts"
       ],
       "@assets/*": [
-        "src/assets/*"
+        "./src/assets/*"
       ],
 
       "@i18n": [
-        "src/assets/i18n/index.ts"
+        "./src/assets/i18n/index.ts"
       ],
       "@i18n/*": [
-        "src/assets/i18n/*"
+        "./src/assets/i18n/*"
       ]
     }
   },

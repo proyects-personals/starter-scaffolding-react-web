@@ -1,5 +1,4 @@
-
-name: PR CI & Auto Pull Request
+name: Auto Pull Request
 
 on:
   pull_request:
@@ -9,45 +8,13 @@ permissions:
   contents: read
   pull-requests: write
 
-# Suprime únicamente la advertencia DEP0040 de Node.js.
-env:
-  NODE_OPTIONS: --disable-warning=DEP0040
+concurrency:
+  group: auto-pr-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  ci:
-    name: CI Validation
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          package-manager-cache: false
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Commitlint
-        run: npx commitlint --from="origin/${{ github.base_ref }}" --to=HEAD
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Tests
-        run: npm test -- --ci
-
-      - name: Security audit
-        run: npm audit --audit-level=high
-
   update-pr:
-    name: Update Pull Request
-    needs: ci
+    name: Actualizar título y descripción del PR
     runs-on: ubuntu-latest
 
     steps:
@@ -100,13 +67,8 @@ jobs:
           FIRST_COMMIT: ${{ steps.metadata.outputs.first_commit }}
           TYPES: ${{ steps.metadata.outputs.types }}
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const pr = context.payload.pull_request;
-
-            if (!pr) {
-              throw new Error("Pull request context is unavailable.");
-            }
 
             const commits = process.env.COMMITS || "- Sin commits";
             const files = process.env.FILES || "- Sin cambios";

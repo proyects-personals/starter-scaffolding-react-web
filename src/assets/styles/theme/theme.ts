@@ -1,11 +1,13 @@
+import { darkTheme } from "./dark.theme";
+import { lightTheme } from "./light.theme";
+import { magentaTheme } from "./magenta.theme";
+import { semiDarkTheme } from "./semi-dark.theme";
+
 import type {
   AppTheme,
   CustomThemeDefinition,
   ThemeName,
-} from "@steveencues/starter-react-ui";
-
-import { darkTheme } from "./dark.theme";
-import { lightTheme } from "./light.theme";
+} from "@satoshi-rc-ui";
 
 /**
  * @description Define los temas nativos habilitados de DaisyUI.
@@ -53,6 +55,8 @@ export const DAISY_UI_THEMES = [
 export const CUSTOM_THEMES: readonly CustomThemeDefinition[] = [
   lightTheme,
   darkTheme,
+  magentaTheme,
+  semiDarkTheme,
 ];
 
 /**

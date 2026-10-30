@@ -1,15 +1,13 @@
+import { ThemeProvider, TranslateProvider } from "@satoshi-rc-ui";
 import React from "react";
 import ReactDOM from "react-dom/client";
 
+import { translations, appThemes } from "@assets";
 import "@assets/i18n";
 import { App } from "@presentation";
-import {
-  ThemeProvider,
-  TranslateProvider,
-} from "@steveencues/starter-react-ui";
+
 import "./style.css";
-import { translations, appThemes } from "@assets";
-import "@steveencues/starter-react-ui/style.css";
+import "@satoshi-rc-ui/style.css";
 
 const container = document.getElementById("root");
 

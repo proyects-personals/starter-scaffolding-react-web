@@ -22,13 +22,44 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Checkout library (Satoshi-librerias/satoshi-rc-ui@develop)
+        uses: actions/checkout@v4
+        with:
+          repository: Satoshi-librerias/satoshi-rc-ui
+          ref: develop
+          token: ${{ secrets.LIBRARY_ACCESS_TOKEN || github.token }}
+          path: lib
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
+      - name: Build and install library
+        run: |
+          mkdir -p resource
+          cd lib
+          npm install
+          npm run build:lib
+          npm pack --ignore-scripts --pack-destination ../resource
+          cd ..
+          node -e "
+            const fs = require('fs');
+            const { execSync } = require('child_process');
+            const tar = fs.readdirSync('resource').find(f => f.endsWith('.tgz'));
+            fs.mkdirSync('.repack', { recursive: true });
+            execSync(\`tar xzf resource/\${tar} -C .repack\`);
+            const pkg = JSON.parse(fs.readFileSync('.repack/package/package.json', 'utf8'));
+            pkg.name = 'satoshi-rc-ui';
+            fs.writeFileSync('.repack/package/package.json', JSON.stringify(pkg, null, 2));
+            execSync('tar czf resource/satoshi-rc-ui-1.0.0.tgz -C .repack package');
+            fs.rmSync('.repack', { recursive: true, force: true });
+            fs.rmSync('resource/' + tar);
+          "
+          ls resource/
+
       - name: Install dependencies
-        run: npm install
+        run: npm install && npm install ./resource/satoshi-rc-ui-*.tgz
 
       - name: Run build
         run: npm run build

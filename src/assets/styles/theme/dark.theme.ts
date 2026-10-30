@@ -1,4 +1,4 @@
-import type { CustomThemeDefinition } from "@steveencues/starter-react-ui";
+import type { CustomThemeDefinition } from "@satoshi-rc-ui";
 
 /**
  * @description Define un tema oscuro personalizado con DaisyUI.

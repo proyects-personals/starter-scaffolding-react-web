@@ -5,7 +5,7 @@ import {
   LanguageSelector,
   ThemeSelector,
   useLanguage,
-} from "@steveencues/starter-react-ui";
+} from "@satoshi-rc-ui";
 import { useState } from "react";
 
 import type { JSX } from "react";

@@ -14,6 +14,8 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "src"),
 
+      "@satoshi-rc-ui": "satoshi-rc-ui",
+
       "@domain": path.resolve(
         __dirname,
         "src/app/domain",

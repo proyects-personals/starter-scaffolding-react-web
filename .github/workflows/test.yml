@@ -6,42 +6,42 @@ on:
   pull_request:
     branches: [main, develop]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
+    name: Type-check y Tests
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run TypeScript type-check
         run: npm run type-check
 
-      - name: Run ESLint and generate report
-        run: |
-          mkdir -p reports
-          npx eslint 'src/**/*.{ts,tsx,js,jsx}' -f html -o reports/eslint-report.html
-          npx eslint 'src/**/*.{ts,tsx,js,jsx}' --max-warnings=0
+      - name: Run tests
+        run: npm test -- --ci
 
-      - name: Run Prettier check and generate report
-        run: |
-          npx prettier --check "src/**/*.{ts,tsx,js,jsx,json,css,scss,md}" --loglevel=debug
-
-      - name: Upload ESLint report
+      - name: Upload coverage report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: eslint-report
-          path: reports/eslint-report.html
-
-      - name: Upload Prettier report
-        uses: actions/upload-artifact@v4
-        with:
-          name: prettier-report
-          path: reports/
+          name: coverage-report
+          path: coverage/lcov-report
+          retention-days: 7
+          if-no-files-found: ignore

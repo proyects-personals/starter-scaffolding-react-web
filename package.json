@@ -15,9 +15,9 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "ui:install:local": "npm install ./resource/steveencues-starter-react-ui-1.0.0.tgz",
-    "ui:uninstall": "npm uninstall @steveencues/starter-react-ui",
-    "ui:install:published": "npm install @steveencues/starter-react-ui@latest"
+    "ui:install:local": "npm install ./resource/satoshi-rc-ui-1.0.0.tgz",
+    "ui:uninstall": "npm uninstall satoshi-rc-ui",
+    "ui:install:published": "npm install satoshi-rc-ui@latest"
   },
   "overrides": {
     "@istanbuljs/load-nyc-config": {
@@ -61,6 +61,7 @@
     "@tailwindcss/vite": "^4.2.1",
     "i18next": "^25.8.13",
     "react-i18next": "^16.5.4",
+    "satoshi-rc-ui": "file:resource/satoshi-rc-ui-1.0.0.tgz",
     "tailwindcss": "^4.2.1"
   },
   "allowScripts": {

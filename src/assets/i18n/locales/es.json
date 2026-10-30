@@ -8,6 +8,14 @@
       "name": "Oscuro",
       "description": "Un tema oscuro con acentos violetas y superficies profundas."
     },
+    "magenta": {
+      "name": "Magenta",
+      "description": "Un tema magenta profesional orientado a una identidad creativa y tecnológica."
+    },
+    "semiDark": {
+      "name": "Semi Oscuro",
+      "description": "Un tema semi oscuro profesional con acentos azules y pizarra."
+    },
     "native": {
       "cupcake": {
         "name": "Cupcake",

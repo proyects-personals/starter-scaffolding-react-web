@@ -10,7 +10,10 @@ export default defineConfig({
     tailwindcss(),
   ],
 
+  // Desarrollo con npm link de satoshi-rc-ui: permite a Vite servir archivos
+  // del repo enlazado (fuera de la raiz) y usa una sola copia de React.
   resolve: {
+    dedupe: ["react", "react-dom"],
     alias: {
       "@": path.resolve(__dirname, "src"),
 
@@ -57,5 +60,8 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 5173,
     strictPort: true,
+    fs: {
+      allow: [".."],
+    },
   },
 });

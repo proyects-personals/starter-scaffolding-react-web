@@ -12,6 +12,20 @@ Flujo para implementar una feature de punta a punta sin romper la arquitectura.
 
 **NUNCA ejecutes `git commit`, `git push`, `git merge`, `git rebase` ni ningún comando que modifique el historial o el remoto.** Al terminar, deja los cambios en el working tree, muestra `git status` y SUGIERE el comando de commit para que el usuario lo ejecute.
 
+## Convención de commit sugerido
+
+Al sugerir el comando de commit usa Conventional Commits; para cambios de CI, workflows o integración con la librería usa el tipo `ci` con la referencia entre paréntesis: `ci(referencia): commit`. Para lo demás usa el tipo apropiado (`feat`, `fix`, `docs`, `refactor`, `test`, `style`, `perf`, `chore`, `build`, `revert`).
+
+Ejemplos:
+
+```bash
+# Cambios en workflows / librería
+git commit -m "ci(build): ajustar checkout de la libreria segun rama destino"
+
+# Nueva funcionalidad en la app
+git commit -m "feat(temas): agregar selector de temas personalizados"
+```
+
 ## Pasos
 
 ### 1. Ubicar la lógica según su capa

@@ -12,6 +12,8 @@ Los temas de esta app son `CustomThemeDefinition` de `satoshi-rc-ui@1.0.0`. El t
 
 **NUNCA ejecutes `git commit`, `git push` ni comandos que modifiquen el historial o el remoto.** Al terminar, deja los cambios en el working tree, muestra `git status` y SUGIERE el comando de commit para que el usuario lo ejecute.
 
+Al sugerir el comando de commit usa Conventional Commits; para cambios de CI, workflows o integración con la librería usa `ci(referencia): commit`; para temas y UI usa el tipo apropiado (`feat`, `fix`, `docs`, `refactor`, `test`, `style`, `perf`, `chore`, `build`, `revert`). Ejemplo: `git commit -m "feat(temas): agregar tema magenta"`.
+
 ## Contrato obligatorio
 
 ```ts

@@ -22,11 +22,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Checkout library (Satoshi-librerias/satoshi-rc-ui@develop)
+      - name: Checkout library (Satoshi-librerias/satoshi-rc-ui, ref = rama destino)
         uses: actions/checkout@v4
         with:
           repository: Satoshi-librerias/satoshi-rc-ui
-          ref: develop
+          ref: ${{ github.base_ref || github.ref_name }}
           token: ${{ secrets.LIBRARY_ACCESS_TOKEN || github.token }}
           path: lib
 

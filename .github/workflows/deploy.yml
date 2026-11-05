@@ -28,6 +28,38 @@ jobs:
         with:
           node-version: 20
 
+      - name: Stub local library package
+        run: |
+          # El package.json declara la dependencia file:resource/satoshi-rc-ui-*.tgz
+          # y este workflow compila la app, así que necesita la librería real.
+          # Se descarga y compila desde Satoshi-librerias/satoshi-rc-ui.
+          mkdir -p resource
+          if ! curl -sfL \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -o resource/source.tgz \
+            "https://api.github.com/repos/Satoshi-librerias/satoshi-rc-ui/tarball/${LIB_REF}"; then
+            echo "::error::No se pudo descargar Satoshi-librerias/satoshi-rc-ui@${LIB_REF}. Verifica el secreto LIBRARY_ACCESS_TOKEN (Contents: read)."
+            exit 1
+          fi
+          tar xzf resource/source.tgz -C resource --strip-components=1
+          cd resource
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.name = 'satoshi-rc-ui';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+          npm install --legacy-peer-deps
+          npm run build:lib
+          npm pack --ignore-scripts --pack-destination .
+          cd ..
+          rm resource/source.tgz
+          ls -la resource/
+        env:
+          GH_TOKEN: ${{ secrets.LIBRARY_ACCESS_TOKEN }}
+          LIB_REF: ${{ github.base_ref || github.ref_name }}
+
       - name: Install dependencies
         run: npm install
 

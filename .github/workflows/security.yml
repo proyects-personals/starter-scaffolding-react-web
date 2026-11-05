@@ -28,6 +28,22 @@ jobs:
         with:
           node-version: 20
 
+      - name: Stub local library package
+        run: |
+          # El package.json declara la dependencia file:resource/satoshi-rc-ui-*.tgz.
+          # Este workflow no usa la librería, así que se genera un stub mínimo
+          # para que npm install no falle con ENOENT.
+          mkdir -p resource/stub/package
+          node -e "
+            const fs = require('fs');
+            fs.writeFileSync('resource/stub/package/package.json', JSON.stringify({
+              name: 'satoshi-rc-ui',
+              version: '0.0.0-stub',
+            }, null, 2));
+          "
+          tar czf resource/satoshi-rc-ui-1.0.0.tgz -C resource/stub package
+          rm -rf resource/stub
+
       - name: Install dependencies
         run: npm install
 

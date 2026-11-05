@@ -8,6 +8,10 @@ argument-hint: 'nombre y paleta del tema'
 
 Los temas de esta app son `CustomThemeDefinition` de `satoshi-rc-ui@1.0.0`. El tipo `AppTheme` de esta versión SOLO tiene `{ name, manifest }`; los colores van en el bloque `daisyUI`. Usar la propiedad `colors` produce el error `TS2353: 'colors' does not exist in type 'AppTheme'`.
 
+## ⛔ Regla de Git (obligatoria)
+
+**NUNCA ejecutes `git commit`, `git push` ni comandos que modifiquen el historial o el remoto.** Al terminar, deja los cambios en el working tree, muestra `git status` y SUGIERE el comando de commit para que el usuario lo ejecute.
+
 ## Contrato obligatorio
 
 ```ts

@@ -17,7 +17,9 @@
     "test:coverage": "jest --coverage",
     "ui:install:local": "npm install ./resource/satoshi-rc-ui-1.0.0.tgz",
     "ui:uninstall": "npm uninstall satoshi-rc-ui",
-    "ui:install:published": "npm install satoshi-rc-ui@latest"
+    "ui:install:published": "npm install satoshi-rc-ui@latest",
+    "ui:link:dev": "npm link satoshi-rc-ui",
+    "ui:unlink:dev": "npm unlink satoshi-rc-ui && npm install ./resource/satoshi-rc-ui-1.0.0.tgz"
   },
   "overrides": {
     "@istanbuljs/load-nyc-config": {

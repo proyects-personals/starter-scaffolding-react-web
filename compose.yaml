@@ -1,0 +1,28 @@
+services:
+  app:
+    build:
+      context: .
+      target: dev
+    container_name: starter-scaffold-dev
+    ports:
+      - "5173:5173"
+    volumes:
+      # Hot reload: el codigo del host monta sobre el del contenedor.
+      - .:/app
+      - node_modules_volume:/app/node_modules
+    environment:
+      - NODE_ENV=development
+    stdin_open: true
+    tty: true
+
+  preview:
+    build:
+      context: .
+      target: runtime
+    container_name: starter-scaffold-preview
+    ports:
+      - "8080:80"
+    profiles: ["preview"]
+
+volumes:
+  node_modules_volume:

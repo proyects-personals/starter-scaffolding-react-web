@@ -41,15 +41,18 @@ jobs:
           cd lib
           npm install --legacy-peer-deps
           npm run build:lib
+          # npm pack nombra el tgz segun el name del package.json de la rama
+          # (@satoshi-rc-ui -> satoshi-rc-ui-1.0.0.tgz, react-ui -> react-ui-1.0.0.tgz).
+          # Se estandariza el nombre para que coincida con la dependencia del scaffold.
           npm pack --ignore-scripts --pack-destination ../resource
           cd ..
-          # El tgz se genera con el name real del package.json de la rama
-          # (react-ui en main, @satoshi-rc-ui en develop). Se renombra a
-          # satoshi-rc-ui para que coincida con la dependencia del scaffold.
-          TARBALL=$(ls ../resource/*.tgz | head -n 1)
+          TARBALL=$(ls resource/*.tgz | head -n 1)
+          if [ -z "${TARBALL}" ]; then echo "::error::npm pack no genero ningún tgz en resource/"; exit 1; fi
           echo "Tarball generado: ${TARBALL}"
-          mv "${TARBALL}" ../resource/satoshi-rc-ui-1.0.0.tgz
-          ls -la ../resource/
+          if [ "${TARBALL}" != "resource/satoshi-rc-ui-1.0.0.tgz" ]; then
+            mv "${TARBALL}" resource/satoshi-rc-ui-1.0.0.tgz
+          fi
+          ls -la resource/
 
       - name: Install dependencies
         run: npm install && npm install ./resource/satoshi-rc-ui-*.tgz

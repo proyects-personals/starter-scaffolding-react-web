@@ -1,0 +1,84 @@
+name: Version Bump
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: version-bump-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: Actualizar versión del package en main
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Detect commit types since last version change
+        id: detect
+        run: |
+          set -euo pipefail
+
+          # Último commit que modificó package.json (el bump anterior).
+          LAST_BUMP_SHA="$(git log -1 --format=%H -- package.json || true)"
+
+          if [ -n "${LAST_BUMP_SHA}" ]; then
+            RANGE="${LAST_BUMP_SHA}..HEAD"
+          else
+            RANGE="HEAD"
+          fi
+
+          SUBJECTS="$(git log ${RANGE} --format=%s || true)"
+          echo "Analizando rango de commits: ${RANGE:-<historia completa>}"
+
+          if echo "${SUBJECTS}" | grep -Eq '(^|[:( ])(BREAKING[ -]CHANGE|!:)'; then
+            echo "bump=major" >> "$GITHUB_OUTPUT"
+          elif echo "${SUBJECTS}" | grep -Eqi '^feat([(:!]|$)'; then
+            echo "bump=minor" >> "$GITHUB_OUTPUT"
+          elif echo "${SUBJECTS}" | grep -Eqi '^(fix|perf)([(:]|$)'; then
+            echo "bump=patch" >> "$GITHUB_OUTPUT"
+          else
+            echo "bump=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump version
+        id: bump
+        if: steps.detect.outputs.bump != ''
+        run: |
+          set -euo pipefail
+          BUMP="${{ steps.detect.outputs.bump }}"
+
+          CURRENT="$(node -p "require('./package.json').version")"
+          NEW="$(npx --yes semver "${CURRENT}" -i "${BUMP}")"
+
+          echo "Versión: ${CURRENT} -> ${NEW} (bump ${BUMP})"
+          npm version "${NEW}" --no-git-tag-version --allow-same-version
+
+          echo "new_version=${NEW}" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push version bump
+        if: steps.detect.outputs.bump != ''
+        env:
+          NEW_VERSION: ${{ steps.bump.outputs.new_version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add package.json
+          git commit -m "chore(release): v${NEW_VERSION} [skip ci]"
+          git push

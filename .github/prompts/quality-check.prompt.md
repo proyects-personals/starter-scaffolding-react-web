@@ -10,4 +10,4 @@ Ejecuta el pipeline de calidad del proyecto en orden y corrige cualquier fallo a
 4. `npm test -- --ci` — corrige tests rotos; si un cambio de comportamiento lo justifica, actualiza el test y explícalo.
 5. `npm run build` — debe terminar en verde.
 
-Reporta al final un resumen de qué fallaba y qué corregiste. No hagas cambios no relacionados con los fallos encontrados.
+Reporta al final un resumen de qué fallaba y qué corregiste. No hagas cambios no relacionados con los fallos encontrados. **No ejecutes `git commit` ni `git push`**: deja los cambios en el working tree y muestra el `git status` final para que el usuario decida.

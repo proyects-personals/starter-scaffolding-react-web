@@ -8,6 +8,10 @@ argument-hint: 'descripción de la feature'
 
 Flujo para implementar una feature de punta a punta sin romper la arquitectura.
 
+## ⛔ Regla de Git (obligatoria)
+
+**NUNCA ejecutes `git commit`, `git push`, `git merge`, `git rebase` ni ningún comando que modifique el historial o el remoto.** Al terminar, deja los cambios en el working tree, muestra `git status` y SUGIERE el comando de commit para que el usuario lo ejecute.
+
 ## Pasos
 
 ### 1. Ubicar la lógica según su capa

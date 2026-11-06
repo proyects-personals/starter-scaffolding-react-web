@@ -20,12 +20,14 @@ El agente **NUNCA** debe ejecutar comandos que modifiquen el historial o el remo
 
 - TypeScript estricto (`strict`, `noUnusedLocals`, `noUnusedParameters`, `verbatimModuleSyntax`: usa `import type` para tipos).
 - Componentes con retorno tipado explícito: `(): JSX.Element`.
-- Comentarios JSDoc en español con `@description`, `@author Steveen Cues`, `@version` siguiendo el patrón de los archivos existentes.
+- Comentarios JSDoc en español con `@description`, `@author Steveen Cues`, `@version` siguiendo el patrón de los archivos existentes. **La documentación se genera con JSDoc**: todo export público (funciones, clases, componentes, interfaces, tipos, constantes exportadas) debe llevar su bloque JSDoc con `@description`, y `@param`/`@returns` cuando aplique (sin tipos inline: TypeScript ya los infiere). La regla es enforceada por ESLint (`eslint-plugin-jsdoc`).
+- **La documentación JSDoc no debe contener caracteres especiales**: solo letras (incluidos acentos españoles), números, espacios y puntuación básica (`. , ; : ( ) -`). Prohibidos emojis, flechas, símbolos decorativos y caracteres unicode de adorno en las descripciones (regla `jsdoc/match-description`, error de ESLint).
 - Formato con Prettier y ESLint flat config (`eslint.config.js`); runner: `npm run lint` (fix) / `npm run lint:check`.
+- **Todo lo que se cree debe ser responsive con Tailwind**: usa las variantes de breakpoint de Tailwind 4 (`sm:`, `md:`, `lg:`, `xl:`) y clases utilitarias (flex, grid, max-w, etc.) en cada componente o vista nueva. La UI debe verse correcta en móvil, tablet y desktop.
 
 ## Architecture
 
-Estructura en `src/` con alias definidos en `tsconfig.json` y `vite.config.ts`:
+Estructura en `src/` con alias definidos en `tsconfig.json` y `vite.config.ts`. **Todo cambio debe respetar esta estructura**: la UI en presentation, la lógica de negocio en sus capas, los textos en i18n y los estilos con Tailwind (responsive obligatorio: `sm:`, `md:`, `lg:`, `xl:`). Además, **todo lo que se agregue debe tener pruebas unitarias** (Jest + Testing Library) junto al código; una feature sin tests no está completa.
 
 - `@presentation` → `src/app/presentation/`: componentes React (`App.tsx`).
 - `@domain`, `@application`, `@infrastructure` → capas reservadas en `src/app/` (crear allí la lógica de negocio, no en presentation).
@@ -51,6 +53,14 @@ npm run ui:install:local   # reinstalar la librería desde el tgz de resource/
 
 - Commits: Conventional Commits (validado por commitlint + husky `commit-msg`; PR titles también validados). **El agente no ejecuta commit ni push** — ver la regla ⛔ arriba.
 - Pre-commit: Prettier + lint-staged.
-- CI en `.github/workflows/`: workflow por concern (lint, test, build, commitlint, security, deploy, build-library, pr-lint, auto-pr, release) en push/PR a `main`/`develop`. Deploy a GitHub Pages desde `main` y `develop`.
+- CI en `.github/workflows/`: workflow por concern (lint, test, build, commitlint, security, deploy, pr-lint, auto-pr, version-bump) en push/PR a `main`/`develop`. Deploy a GitHub Pages desde `main` y `develop`.
 - `coverage/` es artefacto generado; no editarlo a mano.
-- La librería `satoshi-rc-ui` vive en `Satoshi-librerias/satoshi-rc-ui` (rama `develop`); en CI se compila inline (ver `build-library.yml`). El `resource/*.tgz` es solo para desarrollo local.
+- La librería `satoshi-rc-ui` vive en `Satoshi-librerias/satoshi-rc-ui` (rama `develop`). En CI se compila desde el checkout de la rama destino (`${{ github.base_ref || github.ref_name }}`) y la versión del scaffold se alinea con la versión real de la librería. El `resource/*.tgz` es solo para desarrollo local.
+
+## Skills y gobierno (directorio `.github`)
+
+- Skill principal en `.github/skills/ops-lifecycle/`: gobernanza del ciclo de vida en `.ops` (formato OKF 0.2): planes, especificaciones, decisiones DEC, releases y handoff de sesión.
+- Las plantillas de las skills `new-feature` (features completas) y `new-theme` (temas DaisyUI) viven como referencia en `.github/skills/ops-lifecycle/reference/template/`; instalarlas copiándolas a `.github/skills/new-feature/` y `.github/skills/new-theme/` cuando el proyecto las necesite como skills activas.
+- Cada plantilla tiene su `reference/` de apoyo (patrones de código y contrato de tema). Usar la plantilla que corresponda antes de inventar estructura.
+- Guía completa del directorio: `.github/README.md`.
+- Tras editar skills, plantillas o su documentación, ejecutar `npm run validate:kit` (validador en `.github/tools/validate-kit.mjs`): enlaces internos, frontmatter y tokens.

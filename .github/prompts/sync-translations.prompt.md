@@ -9,5 +9,6 @@ Sincroniza los catálogos de traducción del proyecto:
 3. Para cada clave faltante, propón una traducción coherente con el tono del idioma destino y añádela en la MISMA posición jerárquica que en el idioma de referencia (es).
 4. Mantén el formato existente: indentación de 2 espacios, `ensure_ascii` desactivado para acentos, salto de línea final.
 5. Verifica que las claves usadas en el código (`t("...")` en `src/`) existan en los tres catálogos; lista cualquier clave huérfana (usada en código pero sin entrada, o definida pero sin uso).
+6. Si los catálogos tienen tests (paridad de claves), ejecútalos (`npm test -- --ci`) y confirma que siguen en verde.
 
 Muestra un resumen de claves añadidas por idioma y de inconsistencias detectadas.

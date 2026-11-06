@@ -9,5 +9,7 @@ Ejecuta el pipeline de calidad del proyecto en orden y corrige cualquier fallo a
 3. `npm run type-check` — corrige los errores de tipos sin usar `any` ni suprimir con `@ts-ignore`.
 4. `npm test -- --ci` — corrige tests rotos; si un cambio de comportamiento lo justifica, actualiza el test y explícalo.
 5. `npm run build` — debe terminar en verde.
+6. Revisión de estándares del proyecto: verifica que los cambios cumplan la estructura en capas, que toda UI sea responsive con Tailwind (`sm:`, `md:`, `lg:`, `xl:`) y que todo lo agregado tenga pruebas unitarias. Si falta algo, repórtalo (y corrígelo si el usuario lo pidió).
+7. Revisión de documentación JSDoc: los exports nuevos deben tener bloque JSDoc con `@description`/`@author`/`@version`, y la descripción no debe contener caracteres especiales (emojis, flechas, símbolos unicode) — solo letras con acentos, números, espacios y puntuación básica. El lint (`jsdoc/require-jsdoc`, `jsdoc/match-description`) ya lo valida, pero corrige también la documentación antigua que no cumpla.
 
 Reporta al final un resumen de qué fallaba y qué corregiste. No hagas cambios no relacionados con los fallos encontrados. **No ejecutes `git commit` ni `git push`**: deja los cambios en el working tree y muestra el `git status` final para que el usuario decida.

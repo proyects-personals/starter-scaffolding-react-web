@@ -10,6 +10,12 @@ import { useState } from "react";
 
 import type { JSX } from "react";
 
+/**
+ * @description Componente raiz de la aplicacion que compone el header, el selector de temas y el contenido principal.
+ * @author Steveen Cues
+ * @version 1.1.0
+ * @returns La interfaz principal de la aplicacion.
+ */
 export default function App(): JSX.Element {
   const { t } = useLanguage();
   const [showFeedback, setShowFeedback] = useState(false);

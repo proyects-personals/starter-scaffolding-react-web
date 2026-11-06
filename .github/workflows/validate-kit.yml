@@ -1,0 +1,34 @@
+name: validate-kit
+
+on:
+  push:
+    paths:
+      - ".github/**"
+  pull_request:
+    paths:
+      - ".github/**"
+  workflow_dispatch:
+
+jobs:
+  validate-kit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Guard (saltar si el kit no esta instalado)
+        id: guard
+        run: |
+          if [ -f .github/tools/validate-kit.mjs ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.guard.outputs.run == 'true'
+        with:
+          node-version: 22
+
+      - name: Validar kit
+        if: steps.guard.outputs.run == 'true'
+        run: node .github/tools/validate-kit.mjs

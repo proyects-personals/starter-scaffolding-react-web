@@ -72,8 +72,9 @@ jobs:
         with:
           script: |
             // Consulta el estado de los check runs del head commit del PR.
-            // Cada item del checklist CI se marca solo si su check paso;
-            // si no existe o esta en curso/fallido, queda sin marcar.
+            // Los check runs se nombran por el NOMBRE DEL JOB (no del workflow):
+            // ej. "Type-check y Tests", "ESLint y Prettier",
+            // "Security and Dependency Audit", "Validar mensajes de commit".
             const pr = context.payload.pull_request;
             const { data: runs } = await github.rest.checks.listForRef({
               owner: context.repo.owner,
@@ -94,10 +95,10 @@ jobs:
               );
 
             const ci = {
-              commitlint: match(["commitlint", "pr lint", "validate pr title"]),
-              lint: match(["lint", "eslint", "prettier"]),
-              tests: match(["test", "type-check"]),
-              security: match(["security", "audit"]),
+              commitlint: match(["validar mensajes de commit", "commitlint", "pr lint"]),
+              lint: match(["eslint", "prettier", "lint & format"]),
+              tests: match(["type-check y tests", "type-check", "tests"]),
+              security: match(["security and dependency audit", "security"]),
             };
 
             core.setOutput("commitlint", ci.commitlint ? "true" : "false");

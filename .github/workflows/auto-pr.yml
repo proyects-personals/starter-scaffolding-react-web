@@ -3,19 +3,14 @@ name: PR CI & Auto Pull Request
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  # Al completarse cualquier check se regenera la descripción del PR,
-  # así los resultados aparecen solo cuando el workflow ya terminó.
-  check_run:
-    types: [completed]
 
 permissions:
   contents: read
   pull-requests: write
-  checks: read
   actions: read
 
 concurrency:
-  group: auto-pr-${{ github.event.pull_request.number || github.event.check_run.head_sha }}
+  group: auto-pr-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
@@ -29,20 +24,8 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            // En el evento pull_request el PR viene en el payload; en
-            // check_run.completed hay que buscar el PR abierto cuyo head sha
-            // coincida con el check que terminó (si no existe, no hay nada que hacer).
-            let pr = context.payload.pull_request;
-            if (!pr && context.payload.check_run) {
-              const sha = context.payload.check_run.head_sha;
-              const { data: prs } = await github.rest.pulls.list({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                state: "open",
-                per_page: 100,
-              });
-              pr = prs.find((p) => p.head.sha === sha);
-            }
+            const pr = context.payload.pull_request;
+
             if (!pr) {
               core.info("No hay un PR abierto asociado a este evento; se omite.");
               return;
@@ -123,6 +106,39 @@ jobs:
               }
             };
 
+            const sha = prData.head.sha;
+
+            // Espera (polling) a que TODOS los checks CI del PR terminen.
+            // GitHub no dispara check_run para checks creados con
+            // GITHUB_TOKEN del mismo repo, así que se consulta cada 15 s
+            // (máx. 10 min). Devuelve el mapa label -> conclusion.
+            const CI_WORKFLOWS = [
+              ["Commitlint", "commitlint.yml"],
+              ["Lint", "lint.yml"],
+              ["Tests", "test.yml"],
+              ["Security", "security.yml"],
+            ];
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+            const POLL_INTERVAL_MS = 15_000;
+            const POLL_TIMEOUT_MS = 10 * 60_000;
+
+            const results = {};
+            const deadline = Date.now() + POLL_TIMEOUT_MS;
+            while (Date.now() < deadline) {
+              for (const [label, file] of CI_WORKFLOWS) {
+                if (results[label]) continue;
+                const conclusion = await completed(file, { head_sha: sha });
+                if (conclusion) results[label] = conclusion;
+              }
+              if (CI_WORKFLOWS.every(([label]) => results[label])) break;
+              core.info(
+                `Checks pendientes: ${CI_WORKFLOWS.filter(([label]) => !results[label])
+                  .map(([, file]) => file)
+                  .join(", ")} — reintentando en 15 s...`,
+              );
+              await sleep(POLL_INTERVAL_MS);
+            }
+
             const icon = (conclusion) =>
               conclusion === "success" ? "✅" : "❌";
 
@@ -131,19 +147,18 @@ jobs:
                 ? `- ${icon(conclusion)} ${label} (\`${conclusion}\`)`
                 : null;
 
-            const sha = prData.head.sha;
-            const checkLines = [
-              line("Commitlint", await completed("commitlint.yml", { head_sha: sha })),
-              line("Lint", await completed("lint.yml", { head_sha: sha })),
-              line("Tests", await completed("test.yml", { head_sha: sha })),
-              line("Security", await completed("security.yml", { head_sha: sha })),
-            ].filter(Boolean);
+            // Solo se listan los checks que terminaron; los que no corrieron
+            // o siguen pendientes no se marcan.
+            const checkLines = CI_WORKFLOWS.map(([label]) => line(label, results[label])).filter(
+              Boolean,
+            );
 
             const checklist =
               checkLines.length > 0
                 ? checkLines.join("\n")
-                : "_Aún no hay checks de CI completados para este PR._";
+                : "_Los checks de CI no terminaron a tiempo; revisa la pestaña Actions._";
 
+            // Sección de despliegue: solo si ya existe un run completado.
             const baseRef = prData.base.ref;
             const pagesUrl =
               "https://satoshi-frontend.github.io/starter-scaffolding-react-web/";

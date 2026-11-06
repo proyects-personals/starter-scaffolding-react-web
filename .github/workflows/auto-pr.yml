@@ -80,19 +80,47 @@ jobs:
             const formattedFiles =
               filesData.map((f) => `- \`${f.filename}\``).join("\n") || "- Sin cambios";
 
+            // Resuelve el id numérico de un workflow buscando en la lista
+            // completa: la API da 404 si el filename no existe en la rama
+            // por defecto. Se acepta filename o nombre del workflow.
+            const workflowIdByName = {};
+            try {
+              const workflows = await github.paginate(github.rest.actions.listWorkflows, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 100,
+              });
+              for (const wf of workflows) {
+                workflowIdByName[wf.path.split("/").pop()] = wf.id;
+                workflowIdByName[wf.name.toLowerCase()] = wf.id;
+              }
+            } catch (error) {
+              core.warning(`No se pudo listar workflows: ${error.message}`);
+            }
+
+            const findWorkflowId = (nameOrFile) =>
+              workflowIdByName[nameOrFile] ?? workflowIdByName[nameOrFile.replace(/\.ya?ml$/, "")];
+
             // Devuelve la conclusión SOLO si el run del workflow ya terminó.
             // Si está encolado, en progreso o no existe, devuelve null y la
             // línea no se marca.
-            const completed = async (workflowId, filters) => {
-              const { data } = await github.rest.actions.listWorkflowRuns({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                workflow_id: workflowId,
-                per_page: 10,
-                ...filters,
-              });
-              const run = data.workflow_runs[0];
-              return run && run.status === "completed" ? run.conclusion : null;
+            const completed = async (workflowNameOrFile, filters) => {
+              const id = findWorkflowId(workflowNameOrFile);
+              if (!id) return null;
+              try {
+                const { data } = await github.rest.actions.listWorkflowRuns({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: id,
+                  per_page: 10,
+                  ...filters,
+                });
+                const run = data.workflow_runs[0];
+                return run && run.status === "completed" ? run.conclusion : null;
+              } catch (error) {
+                core.warning(`No se pudo consultar ${workflowNameOrFile}: ${error.message}`);
+                return null;
+              }
             };
 
             const icon = (conclusion) =>
@@ -128,9 +156,17 @@ jobs:
 
             let deploySection = "";
             if (deployLink) {
-              const deployWorkflowId =
-                baseRef === "main" ? "deploy-main.yml" : "deploy-develop.yml";
-              const deployConclusion = await completed(deployWorkflowId, { branch: baseRef });
+              // Soporta tanto el esquema unificado (deploy.yml) como los
+              // workflows por rama (deploy-main.yml / deploy-develop.yml).
+              const candidates =
+                baseRef === "main"
+                  ? ["deploy-main.yml", "deploy.yml"]
+                  : ["deploy-develop.yml", "deploy.yml"];
+              let deployConclusion = null;
+              for (const candidate of candidates) {
+                deployConclusion = await completed(candidate, { branch: baseRef });
+                if (deployConclusion) break;
+              }
               if (deployConclusion && deployConclusion !== "skipped") {
                 deploySection = [
                   "",

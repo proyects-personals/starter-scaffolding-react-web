@@ -1,8 +1,8 @@
-name: Deploy
+name: Deploy Main
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -11,12 +11,12 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages-${{ github.ref }}
-  cancel-in-progress: true
+  group: pages-main
+  cancel-in-progress: false
 
 jobs:
   build:
-    name: Build para producción
+    name: Build de main para produccion
     runs-on: ubuntu-latest
 
     steps:
@@ -28,11 +28,11 @@ jobs:
         with:
           node-version: 20
 
-      - name: Stub local library package
+      - name: Download and build library
+        env:
+          GH_TOKEN: ${{ secrets.LIBRARY_ACCESS_TOKEN }}
+          LIB_REF: main
         run: |
-          # El package.json declara la dependencia file:resource/satoshi-rc-ui-*.tgz
-          # y este workflow compila la app, así que necesita la librería real.
-          # Se descarga y compila desde Satoshi-librerias/satoshi-rc-ui.
           mkdir -p resource
           if ! curl -sfL \
             -H "Authorization: Bearer ${GH_TOKEN}" \
@@ -56,15 +56,12 @@ jobs:
           cd ..
           rm resource/source.tgz
           ls -la resource/
-        env:
-          GH_TOKEN: ${{ secrets.LIBRARY_ACCESS_TOKEN }}
-          LIB_REF: ${{ github.base_ref || github.ref_name }}
 
       - name: Install dependencies
         run: npm install
 
       - name: Build
-        run: npm run build
+        run: npm run build -- --base=/starter-scaffolding-react-web/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
@@ -72,10 +69,9 @@ jobs:
           path: dist
 
   deploy:
-    name: Desplegar a GitHub Pages
+    name: Desplegar main a GitHub Pages
     needs: build
     runs-on: ubuntu-latest
-
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

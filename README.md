@@ -1,6 +1,10 @@
 # starter-scaffolding-react-web
 
-Scaffold de **React + TypeScript + Vite 7** como vitrina de la librería [`satoshi-rc-ui`](https://github.com/Satoshi-librerias/satoshi-rc-ui), con arquitectura en capas, i18n (es/en/fr), theming DaisyUI, tests (Jest) y CI completo.
+Scaffold de **React + TypeScript + Vite 7** como vitrina de la librería [`satoshi-rc-ui`](https://github.com/Satoshi-librerias/satoshi-rc-ui), con arquitectura en capas, i18n (es/en/fr), theming DaisyUI, tests (Jest) y CI completo. La guía del directorio de automatización está en [`.github/README.md`](./.github/README.md).
+
+## Licencia
+
+[MIT](./LICENSE) © Steveen Cues
 
 ## Requisitos
 
@@ -134,3 +138,11 @@ Workflows por concern en `.github/workflows/` (push/PR a `main`/`develop`): lint
 - Commits: [Conventional Commits](https://www.conventionalcommits.org/) (validados por commitlint + husky). Para CI/librería: `ci(referencia): commit`.
 - Pre-commit: Prettier + lint-staged.
 - TypeScript estricto; componentes con retorno tipado `(): JSX.Element`.
+- **Responsive con Tailwind**: toda la UI debe verse correcta en móvil, tablet y desktop usando las variantes de breakpoint (`sm:`, `md:`, `lg:`, `xl:`).
+- **Estructura en capas**: la UI en `presentation/`, la lógica de negocio en `domain/`, `application/` e `infrastructure/`; nunca saltarse capas.
+- **Pruebas unitarias obligatorias**: todo componente, hook o lógica nueva debe incluir su test (`*.test.ts(x)`) junto al código; una feature sin tests no está completa.
+- **Documentación con JSDoc**: todo export público lleva bloque JSDoc (`@description`, `@author Steveen Cues`, `@version`, `@param`/`@returns` sin tipos inline). La descripción no admite caracteres especiales (solo letras con acentos, números, espacios y `. , ; : ( ) -`); enforceado por `eslint-plugin-jsdoc`.
+
+## Licencia
+
+[MIT](./LICENSE) © Steveen Cues

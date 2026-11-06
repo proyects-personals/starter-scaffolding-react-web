@@ -11,6 +11,7 @@
     "lint:check": "eslint 'src/**/*.{ts,tsx,js,jsx}'",
     "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css,scss,md}'",
     "type-check": "tsc --noEmit",
+    "validate:kit": "node .github/tools/validate-kit.mjs",
     "prepare": "husky install",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -42,6 +43,7 @@
     "eslint": "^9.39.3",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsdoc": "^65.4.4",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-unicorn": "^63.0.0",
@@ -70,5 +72,6 @@
     "@parcel/watcher@2.6.0": true,
     "esbuild@0.28.2": true,
     "unrs-resolver@1.12.2": true
-  }
+  },
+  "license": "MIT"
 }

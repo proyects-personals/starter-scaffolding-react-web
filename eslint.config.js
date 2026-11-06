@@ -6,6 +6,7 @@ import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import importPlugin from "eslint-plugin-import";
 import unicorn from "eslint-plugin-unicorn";
+import jsdoc from "eslint-plugin-jsdoc";
 import { defineConfig } from "eslint/config";
 
 export default defineConfig([
@@ -41,6 +42,7 @@ export default defineConfig([
       "react-hooks": reactHooks,
       import: importPlugin,
       unicorn,
+      jsdoc,
     },
 
     settings: {
@@ -141,6 +143,59 @@ export default defineConfig([
       "unicorn/prefer-node-protocol": "error",
       "unicorn/no-useless-undefined": "error",
       "unicorn/consistent-function-scoping": "warn",
+
+      /* =====================================================
+       * JSDoc (documentacion generada con JSDoc)
+       * - Exige bloque JSDoc en exports publicos.
+       * - Exige las etiquetas del convenio del proyecto.
+       * - La documentacion NO debe contener caracteres especiales
+       *   (solo letras, numeros, espacios y puntuacion basica).
+       * ===================================================== */
+      "jsdoc/require-jsdoc": [
+        "error",
+        {
+          contexts: [
+            "ExportedFunctionDeclaration",
+            "ExportedClassDeclaration",
+            "ExportedVariableDeclaration",
+            "ExportedInterfaceDeclaration",
+            "ExportedTypeDeclaration",
+          ],
+        },
+      ],
+      "jsdoc/require-description": ["error", { descriptionStyle: "tag" }],
+      "jsdoc/require-description-complete-sentence": "off",
+      "jsdoc/check-param-names": "error",
+      "jsdoc/check-tag-names": ["error", { definedTags: [] }],
+      "jsdoc/require-param": "error",
+      "jsdoc/require-param-type": "off",
+      "jsdoc/require-returns": "error",
+      "jsdoc/require-returns-type": "off",
+      "jsdoc/no-types": "error",
+      "jsdoc/check-alignment": "error",
+      "jsdoc/check-indentation": "error",
+
+      /* Documentacion sin caracteres especiales: solo letras (incluye
+       * acentos espanoles), numeros, espacios y puntuacion basica.
+       * Detecta simbolos como emojis, decorative unicode, etc. */
+      "jsdoc/no-bad-blocks": "off",
+      "jsdoc/require-example": "off",
+    },
+  },
+  {
+    files: ["**/*.{ts,tsx}"],
+    ignores: ["**/*.test.ts", "**/*.test.tsx"],
+    rules: {
+      /* Documentacion sin caracteres especiales: la descripcion solo puede
+       * contener letras (incluye acentos espanoles), numeros, espacios y
+       * puntuacion basica (.,;:()-). Bloquea emojis y simbolos unicode. */
+      "jsdoc/match-description": [
+        "error",
+        {
+          matchDescription: "^[\\p{L}\\p{N}][\\p{L}\\p{N}.,;: \\(\\)\\-]*$",
+          contexts: ["any"],
+        },
+      ],
     },
   },
 ]);

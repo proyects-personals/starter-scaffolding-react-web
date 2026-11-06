@@ -61,6 +61,8 @@ export const CUSTOM_THEMES: readonly CustomThemeDefinition[] = [
 
 /**
  * @description Convierte un nombre nativo de DaisyUI en un tema seleccionable.
+ * @param name - Nombre nativo del tema de DaisyUI.
+ * @returns El tema aplicable con su manifiesto y esquema de colores.
  * @author Steveen Cues
  * @version 1.0.0
  */

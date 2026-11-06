@@ -3,13 +3,20 @@ name: PR CI & Auto Pull Request
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  # Al completarse cualquier check se regenera la descripción del PR,
+  # así los resultados aparecen solo cuando el workflow ya terminó.
+  check_run:
+    types: [completed]
 
 permissions:
   contents: read
   pull-requests: write
+  checks: read
+  actions: read
 
-env:
-  NODE_OPTIONS: --disable-warning=DEP0040
+concurrency:
+  group: auto-pr-${{ github.event.pull_request.number || github.event.check_run.head_sha }}
+  cancel-in-progress: true
 
 jobs:
   update-pr:
@@ -17,114 +24,99 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Collect pull request metadata
-        id: metadata
-        env:
-          BASE_REF: ${{ github.base_ref }}
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          git fetch origin "$BASE_REF"
-
-          COMMITS="$(git log "origin/$BASE_REF..HEAD" --pretty=format:'- %s')"
-          FIRST_COMMIT="$(git log "origin/$BASE_REF..HEAD" --pretty=format:'%s' | tail -n 1)"
-          FILES="$(git diff --name-only "origin/$BASE_REF...HEAD")"
-          TYPES="$(git log "origin/$BASE_REF..HEAD" --pretty=format:'%s' |
-            sed -nE 's/^([a-zA-Z]+)(\([^)]*\))?!?:.*/\1/p' |
-            sort -u |
-            paste -sd ', ' -)"
-
-          {
-            echo "commits<<EOF"
-            printf '%s\n' "${COMMITS:-- Sin commits}"
-            echo "EOF"
-
-            echo "files<<EOF"
-            printf '%s\n' "${FILES:-- Sin cambios}"
-            echo "EOF"
-
-            echo "first_commit<<EOF"
-            printf '%s\n' "${FIRST_COMMIT:-Pull request update}"
-            echo "EOF"
-
-            echo "types<<EOF"
-            printf '%s\n' "${TYPES:-chore}"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
       - name: Update PR title and description
         uses: actions/github-script@v7
-        env:
-          COMMITS: ${{ steps.metadata.outputs.commits }}
-          FILES: ${{ steps.metadata.outputs.files }}
-          FIRST_COMMIT: ${{ steps.metadata.outputs.first_commit }}
-          TYPES: ${{ steps.metadata.outputs.types }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const pr = context.payload.pull_request;
-
+            // En el evento pull_request el PR viene en el payload; en
+            // check_run.completed hay que buscar el PR abierto cuyo head sha
+            // coincida con el check que terminó (si no existe, no hay nada que hacer).
+            let pr = context.payload.pull_request;
+            if (!pr && context.payload.check_run) {
+              const sha = context.payload.check_run.head_sha;
+              const { data: prs } = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: "open",
+                per_page: 100,
+              });
+              pr = prs.find((p) => p.head.sha === sha);
+            }
             if (!pr) {
-              throw new Error("Pull request context is unavailable.");
+              core.info("No hay un PR abierto asociado a este evento; se omite.");
+              return;
             }
 
-            const commits = process.env.COMMITS || "- Sin commits";
-            const files = process.env.FILES || "- Sin cambios";
-            const firstCommit = process.env.FIRST_COMMIT || pr.head.ref;
-            const types = process.env.TYPES || "chore";
-            const baseRef = pr.base.ref;
+            const { data: prData } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+            });
 
-            // Estados de checks que cuentan como "pasado".
-            const PASSED = new Set(["success", "skipped"]);
-            // Estados visibles de checks en progreso o sin resultado.
-            const PENDING = new Set(["pending", "in_progress", "queued", "requested", "waiting"]);
+            // Metadatos via API (no depende de git checkout ni de la rama base).
+            const commitsData = await github.paginate(github.rest.pulls.listCommits, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+            const subjects = commitsData.map((c) => c.commit.message.split("\n")[0]);
+            const commits = subjects.map((s) => `- ${s}`).join("\n") || "- Sin commits";
+            const firstCommit = subjects[0] || prData.head.ref;
+            const types =
+              [...new Set(
+                subjects
+                  .map((s) => (s.match(/^([a-zA-Z]+)(\([^)]*\))?!?:.*/) || [])[1])
+                  .filter(Boolean),
+              )].join(", ") || "chore";
 
-            const fmt = (result) =>
-              PASSED.has(result)
-                ? "✅"
-                : PENDING.has(result)
-                  ? "⏳"
-                  : result === "failure" || result === "timed_out" || result === "startup_failure"
-                    ? "❌"
-                    : "⏳";
+            const filesData = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+            const formattedFiles =
+              filesData.map((f) => `- \`${f.filename}\``).join("\n") || "- Sin cambios";
 
-            const line = (label, result) => {
-              if (!result || result === "not_found") return null;
-              return `- ${fmt(result)} ${label} (\`${result}\`)`;
-            };
-
-            const workflowRuns = async (workflowId, filters) => {
-              const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+            // Devuelve la conclusión SOLO si el run del workflow ya terminó.
+            // Si está encolado, en progreso o no existe, devuelve null y la
+            // línea no se marca.
+            const completed = async (workflowId, filters) => {
+              const { data } = await github.rest.actions.listWorkflowRuns({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 workflow_id: workflowId,
-                per_page: 1,
+                per_page: 10,
                 ...filters,
               });
-              return runs[0]?.conclusion ?? runs[0]?.status ?? null;
+              const run = data.workflow_runs[0];
+              return run && run.status === "completed" ? run.conclusion : null;
             };
 
-            // Estado del workflow de tests para el head sha del PR.
-            const testResult = await workflowRuns("test.yml", { head_sha: pr.head.sha });
+            const icon = (conclusion) =>
+              conclusion === "success" ? "✅" : "❌";
 
+            const line = (label, conclusion) =>
+              conclusion && conclusion !== "skipped"
+                ? `- ${icon(conclusion)} ${label} (\`${conclusion}\`)`
+                : null;
+
+            const sha = prData.head.sha;
             const checkLines = [
-              line("Commitlint", await workflowRuns("commitlint.yml", { head_sha: pr.head.sha })),
-              line("Lint", await workflowRuns("lint.yml", { head_sha: pr.head.sha })),
-              line("Tests", testResult),
-              line("Security", await workflowRuns("security.yml", { head_sha: pr.head.sha })),
+              line("Commitlint", await completed("commitlint.yml", { head_sha: sha })),
+              line("Lint", await completed("lint.yml", { head_sha: sha })),
+              line("Tests", await completed("test.yml", { head_sha: sha })),
+              line("Security", await completed("security.yml", { head_sha: sha })),
             ].filter(Boolean);
 
             const checklist =
               checkLines.length > 0
                 ? checkLines.join("\n")
-                : "_Aún no hay checks de CI para este PR._";
+                : "_Aún no hay checks de CI completados para este PR._";
 
+            const baseRef = prData.base.ref;
             const pagesUrl =
               "https://satoshi-frontend.github.io/starter-scaffolding-react-web/";
             const deployLink =
@@ -134,28 +126,21 @@ jobs:
                   ? `${pagesUrl}preview/`
                   : null;
 
-            const pagesWorkflowId =
-              baseRef === "main" ? "deploy-main.yml" : "deploy-develop.yml";
-
-            const deployResult = deployLink
-              ? await workflowRuns(pagesWorkflowId, { branch: baseRef })
-              : null;
-
-            const deploySection = deployLink && deployResult
-              ? [
+            let deploySection = "";
+            if (deployLink) {
+              const deployWorkflowId =
+                baseRef === "main" ? "deploy-main.yml" : "deploy-develop.yml";
+              const deployConclusion = await completed(deployWorkflowId, { branch: baseRef });
+              if (deployConclusion && deployConclusion !== "skipped") {
+                deploySection = [
                   "",
                   "## 🚀 Despliegue",
-                  deployResult === "success"
+                  deployConclusion === "success"
                     ? `Se desplego correctamente la rama base \`${baseRef}\`: [${deployLink}](${deployLink})`
-                    : `Despliegue \`${deployResult}\` de la rama base \`${baseRef}\`: [${deployLink}](${deployLink})`,
-                ].join("\n")
-              : "";
-
-            const formattedFiles = files
-              .split("\n")
-              .filter((file) => file.length > 0)
-              .map((file) => `- \`${file}\``)
-              .join("\n") || "- Sin cambios";
+                    : `Despliegue \`${deployConclusion}\` de la rama base \`${baseRef}\`: [${deployLink}](${deployLink})`,
+                ].join("\n");
+              }
+            }
 
             const body = [
               "## 🧾 Descripción",

@@ -12,76 +12,8 @@ env:
   NODE_OPTIONS: --disable-warning=DEP0040
 
 jobs:
-  ci:
-    name: CI Validation
-    runs-on: ubuntu-latest
-    outputs:
-      commitlint: ${{ steps.ci-results.outputs.commitlint }}
-      lint: ${{ steps.ci-results.outputs.lint }}
-      security_audit: ${{ steps.ci-results.outputs.security_audit }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Stub local library package
-        run: |
-          # El package.json declara la dependencia file:resource/satoshi-rc-ui-*.tgz.
-          # Este workflow no usa la librería, así que se genera un stub mínimo
-          # para que npm install no falle con ENOENT.
-          mkdir -p resource/stub/package
-          node -e "
-            const fs = require('fs');
-            fs.writeFileSync('resource/stub/package/package.json', JSON.stringify({
-              name: 'satoshi-rc-ui',
-              version: '0.0.0-stub',
-            }, null, 2));
-          "
-          tar czf resource/satoshi-rc-ui-1.0.0.tgz -C resource/stub package
-          rm -rf resource/stub
-
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
-
-      - name: Commitlint
-        id: commitlint
-        run:
-          npx --no-install commitlint --from="origin/${{ github.base_ref }}"
-          --to=HEAD --verbose
-
-      - name: Lint
-        id: lint
-        run: npm run lint:check
-
-      - name: Security audit
-        id: security-audit
-        run: npm audit --audit-level=high
-
-      - name: Export CI step results
-        id: ci-results
-        if: always()
-        env:
-          COMMITLINT_RESULT: ${{ steps.commitlint.outcome }}
-          LINT_RESULT: ${{ steps.lint.outcome }}
-          SECURITY_AUDIT_RESULT: ${{ steps.security-audit.outcome }}
-        run: |
-          {
-            echo "commitlint=${COMMITLINT_RESULT:-skipped}"
-            echo "lint=${LINT_RESULT:-skipped}"
-            echo "security_audit=${SECURITY_AUDIT_RESULT:-skipped}"
-          } >> "$GITHUB_OUTPUT"
-
   update-pr:
     name: Update Pull Request
-    needs: ci
-    if: always()
     runs-on: ubuntu-latest
 
     steps:
@@ -133,9 +65,6 @@ jobs:
           FILES: ${{ steps.metadata.outputs.files }}
           FIRST_COMMIT: ${{ steps.metadata.outputs.first_commit }}
           TYPES: ${{ steps.metadata.outputs.types }}
-          COMMITLINT_RESULT: ${{ needs.ci.outputs.commitlint }}
-          LINT_RESULT: ${{ needs.ci.outputs.lint }}
-          SECURITY_AUDIT_RESULT: ${{ needs.ci.outputs.security_audit }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -151,31 +80,50 @@ jobs:
             const types = process.env.TYPES || "chore";
             const baseRef = pr.base.ref;
 
-            const checkmark = (result) =>
-              result === "success" ? "x" : " ";
+            // Estados de checks que cuentan como "pasado".
+            const PASSED = new Set(["success", "skipped"]);
+            // Estados visibles de checks en progreso o sin resultado.
+            const PENDING = new Set(["pending", "in_progress", "queued", "requested", "waiting"]);
 
-            const commitlintResult = process.env.COMMITLINT_RESULT || "skipped";
-            const lintResult = process.env.LINT_RESULT || "skipped";
-            const securityResult = process.env.SECURITY_AUDIT_RESULT || "skipped";
+            const fmt = (result) =>
+              PASSED.has(result)
+                ? "✅"
+                : PENDING.has(result)
+                  ? "⏳"
+                  : result === "failure" || result === "timed_out" || result === "startup_failure"
+                    ? "❌"
+                    : "⏳";
 
-            const unitTestRuns = await github.paginate(
-              github.rest.actions.listWorkflowRuns,
-              {
+            const line = (label, result) => {
+              if (!result || result === "not_found") return null;
+              return `- ${fmt(result)} ${label} (\`${result}\`)`;
+            };
+
+            const workflowRuns = async (workflowId, filters) => {
+              const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                workflow_id: "test.yml",
-                head_sha: pr.head.sha,
+                workflow_id: workflowId,
                 per_page: 1,
-              },
-            );
-            const testResult = unitTestRuns[0]?.conclusion ?? "pending";
+                ...filters,
+              });
+              return runs[0]?.conclusion ?? runs[0]?.status ?? null;
+            };
 
-            const checklist = [
-              `- [${checkmark(commitlintResult)}] Commitlint (\`${commitlintResult}\`)`,
-              `- [${checkmark(lintResult)}] Lint (\`${lintResult}\`)`,
-              `- [${checkmark(testResult)}] Tests (\`${testResult}\`)`,
-              `- [${checkmark(securityResult)}] Security audit (\`${securityResult}\`)`,
-            ].join("\n");
+            // Estado del workflow de tests para el head sha del PR.
+            const testResult = await workflowRuns("test.yml", { head_sha: pr.head.sha });
+
+            const checkLines = [
+              line("Commitlint", await workflowRuns("commitlint.yml", { head_sha: pr.head.sha })),
+              line("Lint", await workflowRuns("lint.yml", { head_sha: pr.head.sha })),
+              line("Tests", testResult),
+              line("Security", await workflowRuns("security.yml", { head_sha: pr.head.sha })),
+            ].filter(Boolean);
+
+            const checklist =
+              checkLines.length > 0
+                ? checkLines.join("\n")
+                : "_Aún no hay checks de CI para este PR._";
 
             const pagesUrl =
               "https://satoshi-frontend.github.io/starter-scaffolding-react-web/";
@@ -189,19 +137,11 @@ jobs:
             const pagesWorkflowId =
               baseRef === "main" ? "deploy-main.yml" : "deploy-develop.yml";
 
-            const pagesRuns = await github.paginate(
-              github.rest.actions.listWorkflowRuns,
-              {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                workflow_id: pagesWorkflowId,
-                branch: baseRef,
-                per_page: 1,
-              },
-            );
-            const deployResult = pagesRuns[0]?.conclusion ?? "pending";
+            const deployResult = deployLink
+              ? await workflowRuns(pagesWorkflowId, { branch: baseRef })
+              : null;
 
-            const deploySection = deployLink
+            const deploySection = deployLink && deployResult
               ? [
                   "",
                   "## 🚀 Despliegue",

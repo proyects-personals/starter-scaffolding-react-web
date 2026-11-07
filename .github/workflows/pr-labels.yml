@@ -1,0 +1,163 @@
+name: PR Auto Labels
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  label:
+    name: Detect and apply PR labels
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Collect change signals
+        id: signals
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE_REF="${{ github.base_ref }}"
+
+          FILES="$(git diff --name-only "origin/$BASE_REF...HEAD")"
+          TYPES="$(git log "origin/$BASE_REF..HEAD" --pretty=format:'%s' |
+            sed -nE 's/^([a-zA-Z]+)(\([^)]*\))?!?:.*/\1/p' |
+            tr '[:upper:]' '[:lower:]' |
+            sort -u |
+            paste -sd ' ' -)"
+
+          {
+            echo "files<<EOF"
+            printf '%s\n' "${FILES:-(none)}"
+            echo "EOF"
+
+            echo "types<<EOF"
+            printf '%s\n' "${TYPES:-chore}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Apply labels
+        uses: actions/github-script@v7
+        env:
+          FILES: ${{ steps.signals.outputs.files }}
+          TYPES: ${{ steps.signals.outputs.types }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+
+            if (!pr) {
+              throw new Error("Pull request context is unavailable.");
+            }
+
+            const files = (process.env.FILES || "").split("\n").filter(Boolean);
+            const types = (process.env.TYPES || "").split(" ").filter(Boolean);
+
+            const LABELS = {
+              typescript: "typescript",
+              storybook: "storybook",
+              documentation: "documentation",
+              actions: "github-actions",
+              styles: "styles",
+              tests: "tests",
+              feature: "feature",
+              fix: "fix",
+              chore: "chore",
+              refactor: "refactor",
+            };
+
+            const has = (glob) =>
+              files.some((file) => new RegExp(glob).test(file));
+
+            const wanted = new Set();
+
+            // Content area: what is touched.
+            if (has("\\.(ts|tsx)$") && !has("^stories/")) {
+              wanted.add(LABELS.typescript);
+            }
+            if (has("(^|/)\\.storybook/|^stories/.*\\.stories\\.(ts|tsx)$")) {
+              wanted.add(LABELS.storybook);
+            }
+            if (has("\\.(md|mdx)$|(^|/)LICENSE$")) {
+              wanted.add(LABELS.documentation);
+            }
+            if (has("(^|/)\\.github/")) {
+              wanted.add(LABELS.actions);
+            }
+            if (has("\\.(css|scss)($|\\.)|tailwind")) {
+              wanted.add(LABELS.styles);
+            }
+            if (has("(\\.test\\.(ts|tsx)$|\\.spec\\.(ts|tsx)$|(^|/)test/)")) {
+              wanted.add(LABELS.tests);
+            }
+
+            // Intent: conventional commit types in the PR.
+            for (const type of types) {
+              if (type === "feat" || type === "feature") {
+                wanted.add(LABELS.feature);
+              } else if (type === "fix" || type === "bugfix") {
+                wanted.add(LABELS.fix);
+              } else if (type === "docs") {
+                wanted.add(LABELS.documentation);
+                wanted.delete(LABELS.typescript);
+              } else if (type === "chore" || type === "ci") {
+                wanted.add(LABELS.chore);
+              } else if (type === "refactor") {
+                wanted.add(LABELS.refactor);
+              } else if (type === "test") {
+                wanted.add(LABELS.tests);
+                wanted.add(LABELS.typescript);
+              } else if (type === "style") {
+                wanted.add(LABELS.styles);
+              }
+            }
+
+            if (types.length === 0) {
+              wanted.add(LABELS.chore);
+            }
+
+            // Only labels that already exist in the repository.
+            const existing = await github.paginate(
+              github.rest.issues.listLabelsForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 100,
+              },
+            );
+            const existingNames = new Set(existing.map((l) => l.name));
+
+            // Keep labels a human added manually.
+            const manual = pr.labels
+              .map((l) => l.name)
+              .filter((name) => !Object.values(LABELS).includes(name));
+
+            const toApply = [...wanted].filter((name) =>
+              existingNames.has(name),
+            );
+
+            await github.rest.issues.setLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels: [...new Set([...manual, ...toApply])],
+            });
+
+            const missing = [...wanted].filter(
+              (name) => !existingNames.has(name),
+            );
+            if (missing.length > 0) {
+              core.warning(
+                `Labels not found in the repository (create them to enable them): ${missing.join(", ")}`,
+              );
+            }
+
+            core.info(`Applied labels: ${[...manual, ...toApply].join(", ")}`);

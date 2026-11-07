@@ -59,8 +59,21 @@ npm run ui:install:local   # reinstalar la librería desde el tgz de resource/
 
 ## Skills y gobierno (directorio `.github`)
 
-- Skill principal en `.github/skills/ops-lifecycle/`: gobernanza del ciclo de vida en `.ops` (formato OKF 0.2): planes, especificaciones, decisiones DEC, releases y handoff de sesión.
-- Las plantillas de las skills `new-feature` (features completas) y `new-theme` (temas DaisyUI) viven como referencia en `.github/skills/ops-lifecycle/reference/template/`; instalarlas copiándolas a `.github/skills/new-feature/` y `.github/skills/new-theme/` cuando el proyecto las necesite como skills activas.
-- Cada plantilla tiene su `reference/` de apoyo (patrones de código y contrato de tema). Usar la plantilla que corresponda antes de inventar estructura.
+### Uso obligatorio de skills y tools por el agente
+
+- **Antes de responder o editar nada**, revisa si existe una skill aplicable en
+  `.github/skills/<nombre>/SKILL.md`. Si aplica, invocala con el tool `skill`
+  ANTES de tu primera accion. No la resumas ni la ignores.
+- `ops-lifecycle`: SIEMPRE que toques `.ops/`, `PROGRESS.md`, handoff, REQ, BL,
+  IMPL, QT, DEC, RSK, BUG, VULN, RUN, MIG, REL, releases, planes o specs.
+- `new-feature` (features) y `new-theme` (temas DaisyUI): plantillas en
+  `.github/skills/ops-lifecycle/reference/template/`; instalarlas copiándolas a
+  `.github/skills/new-feature/` y `.github/skills/new-theme/` al adoptarlas.
+  Usar la plantilla que corresponda antes de inventar estructura.
+- **Tools del proyecto**: `npm run validate:kit` tras editar skills/plantillas/
+  docs de `.github` (enlaces, frontmatter y tokens); `npm run lint:check`,
+  `npm run type-check` y `npm test` para validar cambios de código.
+- **Workflows de PR**: al modificar flujos de PR, alineate con lo que ya existe
+  (auto-pr actualiza titulo/descripcion/checklist; pr-labels aplica etiquetas;
+  pr-lint valida titulo). No dupliques validaciones de otros workflows.
 - Guía completa del directorio: `.github/README.md`.
-- Tras editar skills, plantillas o su documentación, ejecutar `npm run validate:kit` (validador en `.github/tools/validate-kit.mjs`): enlaces internos, frontmatter y tokens.

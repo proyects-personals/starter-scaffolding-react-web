@@ -54,6 +54,18 @@ jobs:
           npm run build:lib
           npm pack --ignore-scripts --pack-destination .
           cd ..
+          # La version de la libreria puede cambiar por rama (main se promueve
+          # con cada release). Se alinea el package.json del scaffold con la
+          # version real del tarball generado para que npm la resuelva.
+          LIB_VERSION=$(node -p "require('./resource/package.json').version")
+          export LIB_VERSION
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.dependencies['satoshi-rc-ui'] = 'file:resource/satoshi-rc-ui-' + process.env.LIB_VERSION + '.tgz';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+          echo "scaffold usa satoshi-rc-ui@${LIB_VERSION} (file:resource/satoshi-rc-ui-${LIB_VERSION}.tgz)"
           rm resource/source.tgz
           ls -la resource/
 

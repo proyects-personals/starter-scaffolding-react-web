@@ -8,6 +8,7 @@ permissions:
   contents: read
   pull-requests: write
   actions: read
+  checks: read
 
 concurrency:
   group: auto-pr-${{ github.event.pull_request.number }}
@@ -63,61 +64,37 @@ jobs:
             const formattedFiles =
               filesData.map((f) => `- \`${f.filename}\``).join("\n") || "- Sin cambios";
 
-            // Resuelve el id numérico de un workflow buscando en la lista
-            // completa: la API da 404 si el filename no existe en la rama
-            // por defecto. Se acepta filename o nombre del workflow.
-            const workflowIdByName = {};
-            try {
-              const workflows = await github.paginate(github.rest.actions.listWorkflows, {
+            // Resuelve las conclusiones de los checks del head del PR usando
+            // la API de Checks (igual que gh pr checks). A diferencia de
+            // listWorkflowRuns con head_sha, aqui si se ven los runs de
+            // pull_request porque GitHub los registra con el SHA del merge
+            // commit y listForRef los expone por nombre de check.
+            const CI_CHECK_NAMES = [
+              "Compilación de producción",
+              "ESLint y Prettier",
+              "Type-check y Tests",
+              "Security and Dependency Audit",
+              "Validar mensajes de commit",
+              "Validar título del PR",
+              "Detect and apply PR labels",
+            ];
+
+            const fetchChecks = async (ref) => {
+              const { data } = await github.rest.checks.listForRef({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
+                ref,
                 per_page: 100,
               });
-              for (const wf of workflows) {
-                workflowIdByName[wf.path.split("/").pop()] = wf.id;
-                workflowIdByName[wf.name.toLowerCase()] = wf.id;
-              }
-            } catch (error) {
-              core.warning(`No se pudo listar workflows: ${error.message}`);
-            }
-
-            const findWorkflowId = (nameOrFile) =>
-              workflowIdByName[nameOrFile] ?? workflowIdByName[nameOrFile.replace(/\.ya?ml$/, "")];
-
-            // Devuelve la conclusión SOLO si el run del workflow ya terminó.
-            // Si está encolado, en progreso o no existe, devuelve null y la
-            // línea no se marca.
-            const completed = async (workflowNameOrFile, filters) => {
-              const id = findWorkflowId(workflowNameOrFile);
-              if (!id) return null;
-              try {
-                const { data } = await github.rest.actions.listWorkflowRuns({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  workflow_id: id,
-                  per_page: 10,
-                  ...filters,
-                });
-                const run = data.workflow_runs[0];
-                return run && run.status === "completed" ? run.conclusion : null;
-              } catch (error) {
-                core.warning(`No se pudo consultar ${workflowNameOrFile}: ${error.message}`);
-                return null;
-              }
+              return data.check_runs ?? [];
             };
 
-            const sha = prData.head.sha;
+            const headRef = prData.head.ref;
 
             // Espera (polling) a que TODOS los checks CI del PR terminen.
             // GitHub no dispara check_run para checks creados con
             // GITHUB_TOKEN del mismo repo, así que se consulta cada 15 s
-            // (máx. 10 min). Devuelve el mapa label -> conclusion.
-            const CI_WORKFLOWS = [
-              ["Commitlint", "commitlint.yml"],
-              ["Lint", "lint.yml"],
-              ["Tests", "test.yml"],
-              ["Security", "security.yml"],
-            ];
+            // (máx. 10 min). Devuelve el mapa nombre -> conclusion.
             const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
             const POLL_INTERVAL_MS = 15_000;
             const POLL_TIMEOUT_MS = 10 * 60_000;
@@ -125,16 +102,22 @@ jobs:
             const results = {};
             const deadline = Date.now() + POLL_TIMEOUT_MS;
             while (Date.now() < deadline) {
-              for (const [label, file] of CI_WORKFLOWS) {
-                if (results[label]) continue;
-                const conclusion = await completed(file, { head_sha: sha });
-                if (conclusion) results[label] = conclusion;
+              let checkRuns = [];
+              try {
+                checkRuns = await fetchChecks(headRef);
+              } catch (error) {
+                core.warning(`No se pudo consultar checks: ${error.message}`);
               }
-              if (CI_WORKFLOWS.every(([label]) => results[label])) break;
+              const completedRuns = checkRuns.filter((run) => run.status === "completed");
+              for (const run of completedRuns) {
+                if (!(run.name in results)) results[run.name] = run.conclusion;
+              }
+              const pendingNames = CI_CHECK_NAMES.filter(
+                (name) => !(name in results),
+              );
+              if (pendingNames.length === 0) break;
               core.info(
-                `Checks pendientes: ${CI_WORKFLOWS.filter(([label]) => !results[label])
-                  .map(([, file]) => file)
-                  .join(", ")} — reintentando en 15 s...`,
+                `Checks pendientes: ${pendingNames.join(", ")} — reintentando en 15 s...`,
               );
               await sleep(POLL_INTERVAL_MS);
             }
@@ -142,14 +125,14 @@ jobs:
             const icon = (conclusion) =>
               conclusion === "success" ? "✅" : "❌";
 
-            const line = (label, conclusion) =>
+            const line = (name, conclusion) =>
               conclusion && conclusion !== "skipped"
-                ? `- ${icon(conclusion)} ${label} (\`${conclusion}\`)`
+                ? `- ${icon(conclusion)} ${name} (\`${conclusion}\`)`
                 : null;
 
             // Solo se listan los checks que terminaron; los que no corrieron
             // o siguen pendientes no se marcan.
-            const checkLines = CI_WORKFLOWS.map(([label]) => line(label, results[label])).filter(
+            const checkLines = CI_CHECK_NAMES.map((name) => line(name, results[name])).filter(
               Boolean,
             );
 
@@ -171,26 +154,68 @@ jobs:
 
             let deploySection = "";
             if (deployLink) {
-              // Soporta tanto el esquema unificado (deploy.yml) como los
-              // workflows por rama (deploy-main.yml / deploy-develop.yml).
-              const candidates =
-                baseRef === "main"
-                  ? ["deploy-main.yml", "deploy.yml"]
-                  : ["deploy-develop.yml", "deploy.yml"];
-              let deployConclusion = null;
-              for (const candidate of candidates) {
-                deployConclusion = await completed(candidate, { branch: baseRef });
-                if (deployConclusion) break;
+              // Los deploys corren en push a la rama base, no en el PR, asi
+              // que se consulta el ultimo run completado del workflow de
+              // despliegue de esa rama (no de head_sha, que nunca coincidiria).
+              const deployWorkflow =
+                baseRef === "main" ? "deploy-main.yml" : "deploy-develop.yml";
+              let deployStatus = null;
+              let deployRunUrl = deployLink;
+              try {
+                const { data: runsData } =
+                  await github.rest.actions.listWorkflowRuns({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    workflow_id: deployWorkflow,
+                    branch: baseRef,
+                    per_page: 5,
+                  });
+                const run = runsData.workflow_runs.find(
+                  (r) => r.status === "completed",
+                );
+                if (run) {
+                  deployStatus = run.conclusion;
+                  deployRunUrl = run.html_url;
+                }
+              } catch (error) {
+                core.warning(
+                  `No se pudo consultar el despliegue: ${error.message}`,
+                );
               }
-              if (deployConclusion && deployConclusion !== "skipped") {
+
+              if (deployStatus) {
                 deploySection = [
                   "",
                   "## 🚀 Despliegue",
-                  deployConclusion === "success"
-                    ? `Se desplego correctamente la rama base \`${baseRef}\`: [${deployLink}](${deployLink})`
-                    : `Despliegue \`${deployConclusion}\` de la rama base \`${baseRef}\`: [${deployLink}](${deployLink})`,
+                  deployStatus === "success"
+                    ? `El ultimo despliegue de \`${baseRef}\` fue exitoso: [ver run](${deployRunUrl}) - [sitio](${deployLink})`
+                    : `Ultimo despliegue de \`${baseRef}\`: \`${deployStatus}\` - [ver run](${deployRunUrl}) - [sitio](${deployLink})`,
+                ].join("\n");
+              } else {
+                deploySection = [
+                  "",
+                  "## 🚀 Despliegue",
+                  `Aun no hay despliegues registrados para \`${baseRef}\`. Se ejecutara al hacer push a la rama base: [sitio](${deployLink})`,
                 ].join("\n");
               }
+            }
+
+            // Etiquetas actuales del PR (aplicadas por pr-labels.yml o a mano).
+            // Se recargan justo antes de armar el cuerpo para reflejar lo
+            // que el workflow de labels ya aplico en este mismo push.
+            let labels = "_Sin etiquetas_";
+            try {
+              const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+              });
+              const labelNames = currentLabels.map((l) => l.name);
+              if (labelNames.length > 0) {
+                labels = labelNames.map((name) => `- \`${name}\``).join("\n");
+              }
+            } catch (error) {
+              core.warning(`No se pudieron listar las etiquetas: ${error.message}`);
             }
 
             const body = [
@@ -205,6 +230,9 @@ jobs:
               "",
               "## 🏷️ Tipo de cambio",
               `\`${types}\``,
+              "",
+              "## 🏷️ Etiquetas",
+              labels,
               "",
               "## ☑️ Checklist CI",
               checklist,

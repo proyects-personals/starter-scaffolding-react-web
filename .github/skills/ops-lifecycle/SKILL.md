@@ -1,6 +1,6 @@
 ---
 name: ops-lifecycle
-description: Ops lifecycle governance: plans, specs, ADRs, releases, handoff.
+description: "Use when: working with .ops governance, plans, specs, requirements (REQ), decisions (DEC), risks (RSK), bugs (BUG), releases (REL), session handoff, PROGRESS.md, or any feature/theme workflow in this repo. Usar cuando: se trabaja con gobernanza .ops, planes, especificaciones, decisiones, releases, handoff de sesion o el kit de features/temas."
 ---
 
 # ops-lifecycle

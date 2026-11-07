@@ -1,17 +1,26 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main
+  # Corre cuando Version Bump termina: asi el release siempre lee la version
+  # NUEVA que el bump escribio en package.json (v0.0.1, v1.2.3, ...).
+  workflow_run:
+    workflows: ["Version Bump"]
+    types: [completed]
+  workflow_dispatch:
 
 permissions:
   contents: write
-  issues: write
-  pull-requests: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   release:
+    name: Crear release de la version del package
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
 
     steps:
@@ -20,31 +29,67 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Stub local library package
+      - name: Read version from package.json
+        id: version
         run: |
-          # El package.json declara la dependencia file:resource/satoshi-rc-ui-*.tgz.
-          # Este workflow no usa la librería, así que se genera un stub mínimo
-          # para que npm install no falle con ENOENT.
-          mkdir -p resource/stub/package
-          node -e "
-            const fs = require('fs');
-            fs.writeFileSync('resource/stub/package/package.json', JSON.stringify({
-              name: 'satoshi-rc-ui',
-              version: '0.0.0-stub',
-            }, null, 2));
-          "
-          tar czf resource/satoshi-rc-ui-1.0.0.tgz -C resource/stub package
-          rm -rf resource/stub
+          set -euo pipefail
 
-      - name: Install dependencies
-        run: npm install
+          # La version la gobierna version-bump.yml sobre el package.json;
+          # el release toma esa version tal cual (v0.0.1, v1.2.3, ...).
+          VERSION="$(node -p "require('./package.json').version")"
+          TAG="v${VERSION}"
 
-      - name: Semantic Release
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "exists=$(git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Collect release notes
+        if: steps.version.outputs.exists == 'false'
+        id: notes
+        run: |
+          set -euo pipefail
+
+          TAG="${{ steps.version.outputs.tag }}"
+
+          # Notas desde el tag anterior (o la historia completa si es el primero).
+          PREV_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          if [ -n "${PREV_TAG}" ]; then
+            RANGE="${PREV_TAG}..HEAD"
+          else
+            RANGE="HEAD"
+          fi
+
+          {
+            echo "notes<<EOF"
+            git log ${RANGE} --pretty=format:"- %s (%h)" || true
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        if: steps.version.outputs.exists == 'false'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+          NOTES: ${{ steps.notes.outputs.notes }}
+        run: |
+          set -euo pipefail
+
+          {
+            echo "## Release ${TAG}"
+            echo ""
+            echo "${NOTES:-- Sin cambios registrados.}"
+          } > RELEASE_NOTES.md
+
+          gh release create "${TAG}" \
+            --target "${GITHUB_SHA}" \
+            --title "${TAG}" \
+            --notes-file RELEASE_NOTES.md
+
+          rm RELEASE_NOTES.md
+          echo "Release ${TAG} creado (version ${VERSION} del package.json)."

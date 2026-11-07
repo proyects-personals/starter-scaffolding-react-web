@@ -61,17 +61,58 @@ jobs:
             const files = (process.env.FILES || "").split("\n").filter(Boolean);
             const types = (process.env.TYPES || "").split(" ").filter(Boolean);
 
+            // Cada label con su color para poder crearla si falta en el repo.
             const LABELS = {
-              typescript: "typescript",
-              storybook: "storybook",
-              documentation: "documentation",
-              actions: "github-actions",
-              styles: "styles",
-              tests: "tests",
-              feature: "feature",
-              fix: "fix",
-              chore: "chore",
-              refactor: "refactor",
+              typescript: {
+                name: "typescript",
+                color: "3178c6",
+                description: "Cambios en codigo TypeScript",
+              },
+              storybook: {
+                name: "storybook",
+                color: "ff69b4",
+                description: "Cambios en historias de Storybook",
+              },
+              documentation: {
+                name: "documentation",
+                color: "0075ca",
+                description: "Cambios en documentacion",
+              },
+              actions: {
+                name: "github-actions",
+                color: "000000",
+                description: "Cambios en CI y workflows",
+              },
+              styles: {
+                name: "styles",
+                color: "5319e7",
+                description: "Cambios de estilos y temas",
+              },
+              tests: {
+                name: "tests",
+                color: "0e8a16",
+                description: "Cambios en pruebas unitarias",
+              },
+              feature: {
+                name: "feature",
+                color: "a2eeef",
+                description: "Nueva funcionalidad",
+              },
+              bug: {
+                name: "bug",
+                color: "d73a4a",
+                description: "Correccion de defecto",
+              },
+              chore: {
+                name: "chore",
+                color: "cccccc",
+                description: "Mantenimiento y tareas de rutina",
+              },
+              refactor: {
+                name: "refactor",
+                color: "fbca04",
+                description: "Refactorizacion sin cambio de comportamiento",
+              },
             };
 
             const has = (glob) =>
@@ -80,51 +121,51 @@ jobs:
             const wanted = new Set();
 
             // Content area: what is touched.
-            if (has("\\.(ts|tsx)$") && !has("^stories/")) {
-              wanted.add(LABELS.typescript);
+            if (has("\\.(ts|tsx)$")) {
+              wanted.add(LABELS.typescript.name);
             }
             if (has("(^|/)\\.storybook/|^stories/.*\\.stories\\.(ts|tsx)$")) {
-              wanted.add(LABELS.storybook);
+              wanted.add(LABELS.storybook.name);
             }
             if (has("\\.(md|mdx)$|(^|/)LICENSE$")) {
-              wanted.add(LABELS.documentation);
+              wanted.add(LABELS.documentation.name);
             }
             if (has("(^|/)\\.github/")) {
-              wanted.add(LABELS.actions);
+              wanted.add(LABELS.actions.name);
             }
             if (has("\\.(css|scss)($|\\.)|tailwind")) {
-              wanted.add(LABELS.styles);
+              wanted.add(LABELS.styles.name);
             }
             if (has("(\\.test\\.(ts|tsx)$|\\.spec\\.(ts|tsx)$|(^|/)test/)")) {
-              wanted.add(LABELS.tests);
+              wanted.add(LABELS.tests.name);
             }
 
             // Intent: conventional commit types in the PR.
             for (const type of types) {
               if (type === "feat" || type === "feature") {
-                wanted.add(LABELS.feature);
+                wanted.add(LABELS.feature.name);
               } else if (type === "fix" || type === "bugfix") {
-                wanted.add(LABELS.fix);
+                wanted.add(LABELS.bug.name);
               } else if (type === "docs") {
-                wanted.add(LABELS.documentation);
-                wanted.delete(LABELS.typescript);
+                wanted.add(LABELS.documentation.name);
               } else if (type === "chore" || type === "ci") {
-                wanted.add(LABELS.chore);
+                wanted.add(LABELS.chore.name);
               } else if (type === "refactor") {
-                wanted.add(LABELS.refactor);
+                wanted.add(LABELS.refactor.name);
               } else if (type === "test") {
-                wanted.add(LABELS.tests);
-                wanted.add(LABELS.typescript);
+                wanted.add(LABELS.tests.name);
+                wanted.add(LABELS.typescript.name);
               } else if (type === "style") {
-                wanted.add(LABELS.styles);
+                wanted.add(LABELS.styles.name);
               }
             }
 
             if (types.length === 0) {
-              wanted.add(LABELS.chore);
+              wanted.add(LABELS.chore.name);
             }
 
-            // Only labels that already exist in the repository.
+            // Labels que faltan en el repo se crean automaticamente con su
+            // color y descripcion; asi el labeler nunca se queda mudo.
             const existing = await github.paginate(
               github.rest.issues.listLabelsForRepo,
               {
@@ -135,10 +176,31 @@ jobs:
             );
             const existingNames = new Set(existing.map((l) => l.name));
 
+            for (const label of Object.values(LABELS)) {
+              if (!existingNames.has(label.name)) {
+                try {
+                  await github.rest.issues.createLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name: label.name,
+                    color: label.color,
+                    description: label.description,
+                  });
+                  existingNames.add(label.name);
+                  core.info(`Created label: ${label.name}`);
+                } catch (error) {
+                  core.warning(
+                    `No se pudo crear la label ${label.name}: ${error.message}`,
+                  );
+                }
+              }
+            }
+
             // Keep labels a human added manually.
+            const autoNames = Object.values(LABELS).map((l) => l.name);
             const manual = pr.labels
               .map((l) => l.name)
-              .filter((name) => !Object.values(LABELS).includes(name));
+              .filter((name) => !autoNames.includes(name));
 
             const toApply = [...wanted].filter((name) =>
               existingNames.has(name),
@@ -150,14 +212,5 @@ jobs:
               issue_number: pr.number,
               labels: [...new Set([...manual, ...toApply])],
             });
-
-            const missing = [...wanted].filter(
-              (name) => !existingNames.has(name),
-            );
-            if (missing.length > 0) {
-              core.warning(
-                `Labels not found in the repository (create them to enable them): ${missing.join(", ")}`,
-              );
-            }
 
             core.info(`Applied labels: ${[...manual, ...toApply].join(", ")}`);

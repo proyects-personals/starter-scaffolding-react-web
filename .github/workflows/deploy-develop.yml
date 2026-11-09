@@ -5,93 +5,16 @@ on:
     branches: [develop]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages-develop
-  cancel-in-progress: false
-
 jobs:
-  build:
-    name: Build de develop para staging
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Download and build library
-        env:
-          GH_TOKEN: ${{ secrets.LIBRARY_ACCESS_TOKEN }}
-          LIB_REF: develop
-        run: |
-          mkdir -p resource
-          if ! curl -sfL \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            -o resource/source.tgz \
-            "https://api.github.com/repos/Satoshi-librerias/satoshi-rc-ui/tarball/${LIB_REF}"; then
-            echo "::error::No se pudo descargar Satoshi-librerias/satoshi-rc-ui@${LIB_REF}. Verifica el secreto LIBRARY_ACCESS_TOKEN (Contents: read)."
-            exit 1
-          fi
-          tar xzf resource/source.tgz -C resource --strip-components=1
-          cd resource
-          node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.name = 'satoshi-rc-ui';
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
-          "
-          npm install --legacy-peer-deps
-          npm run build:lib
-          npm pack --ignore-scripts --pack-destination .
-          cd ..
-          # La version de la libreria puede cambiar por rama (main se promueve
-          # con cada release). Se alinea el package.json del scaffold con la
-          # version real del tarball generado para que npm la resuelva.
-          LIB_VERSION=$(node -p "require('./resource/package.json').version")
-          export LIB_VERSION
-          node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.dependencies['satoshi-rc-ui'] = 'file:resource/satoshi-rc-ui-' + process.env.LIB_VERSION + '.tgz';
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-          "
-          echo "scaffold usa satoshi-rc-ui@${LIB_VERSION} (file:resource/satoshi-rc-ui-${LIB_VERSION}.tgz)"
-          rm resource/source.tgz
-          ls -la resource/
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build
-        run: npm run build -- --base=/starter-scaffolding-react-web/
-
-      - name: Add develop banner
-        run: |
-          # Marca visual para distinguir el despliegue de develop del de main.
-          sed -i 's|<body>|<body><div style="position:fixed;bottom:0;left:0;z-index:9999;background:#d97706;color:#fff;font:600 12px sans-serif;padding:2px 10px;border-radius:0 4px 0 0;">develop</div>|' dist/index.html
-          grep -c "develop</div>" dist/index.html
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
-  deploy:
-    name: Desplegar develop a GitHub Pages
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+  pages:
+    name: Desplegar develop (preview) + mantener main (produccion)
+    uses: ./.github/workflows/pages-reusable.yml
+    with:
+      primary_ref: develop
+      secondary_ref: main
+      primary_base: /starter-scaffolding-react-web/preview/
+      secondary_base: /starter-scaffolding-react-web/
+      primary_slot: preview
+      secondary_slot: .
+      banner: develop
+    secrets: inherit

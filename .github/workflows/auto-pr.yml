@@ -155,8 +155,8 @@ jobs:
             let deploySection = "";
             if (deployLink) {
               // Los deploys corren en push a la rama base, no en el PR, asi
-              // que se consulta el ultimo run completado del workflow de
-              // despliegue de esa rama (no de head_sha, que nunca coincidiria).
+              // que se consulta el ultimo run completado del workflow unificado
+              // de Pages (publica / para main y /preview/ para develop).
               const deployWorkflow =
                 baseRef === "main" ? "deploy-main.yml" : "deploy-develop.yml";
               let deployStatus = null;

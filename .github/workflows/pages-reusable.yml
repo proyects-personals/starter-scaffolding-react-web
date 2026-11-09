@@ -1,0 +1,195 @@
+name: Pages Deploy (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      primary_ref:
+        description: "Rama cuyos cambios manda el push (main o develop)"
+        required: true
+        type: string
+      secondary_ref:
+        description: "Rama estable complementaria que se mantiene publicada"
+        required: true
+        type: string
+      primary_base:
+        description: "Base path del build primario"
+        required: true
+        type: string
+      secondary_base:
+        description: "Base path del build secundario"
+        required: true
+        type: string
+      primary_slot:
+        description: "Directorio del sitio donde va el build primario ('.' o 'preview')"
+        required: true
+        type: string
+      secondary_slot:
+        description: "Directorio del sitio donde va el build secundario ('.' o 'preview')"
+        required: true
+        type: string
+      banner:
+        description: "Texto del banner visual sobre el build primario (vacío = sin banner)"
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  LIB_REPO: Satoshi-librerias/satoshi-rc-ui
+
+jobs:
+  deploy:
+    name: Deploy Pages (primary=${{ inputs.primary_ref }})
+    runs-on: ubuntu-latest
+
+    steps:
+      # ---------- Build primario (rama que recibe el push) ----------
+      - name: Checkout primary (${{ inputs.primary_ref }})
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.primary_ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build library (ref = ${{ inputs.primary_ref }})
+        env:
+          GH_TOKEN: ${{ secrets.LIBRARY_ACCESS_TOKEN }}
+          LIB_REF: ${{ inputs.primary_ref }}
+        run: |
+          # Descarga y compila la librería desde la ref dada y deja el
+          # tarball en resource/ listo para npm install del scaffold.
+          set -euo pipefail
+          rm -rf lib-src
+          mkdir -p resource
+          if ! curl -sfL \
+            -H "Authorization: ******" \
+            -H "Accept: application/vnd.github+json" \
+            -o resource/source.tgz \
+            "https://api.github.com/repos/${LIB_REPO}/tarball/${LIB_REF}"; then
+            echo "::error::No se pudo descargar ${LIB_REPO}@${LIB_REF}. Verifica el secreto LIBRARY_ACCESS_TOKEN (Contents: read)."
+            exit 1
+          fi
+          tar xzf resource/source.tgz -C lib-src --strip-components=1
+          (
+            cd lib-src
+            node -e "
+              const fs = require('fs');
+              const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+              pkg.name = 'satoshi-rc-ui';
+              fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+            "
+            npm install --legacy-peer-deps
+            npm run build:lib
+            npm pack --ignore-scripts --pack-destination ../resource
+          )
+          rm resource/source.tgz
+          LIB_VERSION=$(node -p "require('./lib-src/package.json').version")
+          export LIB_VERSION
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.dependencies['satoshi-rc-ui'] = 'file:resource/satoshi-rc-ui-' + process.env.LIB_VERSION + '.tgz';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+          echo "scaffold usa satoshi-rc-ui@${LIB_VERSION} (file:resource/satoshi-rc-ui-${LIB_VERSION}.tgz)"
+
+      - name: Install dependencies (primary)
+        run: npm install
+
+      - name: Build app (primary, base ${{ inputs.primary_base }})
+        run: npm run build -- --base=${{ inputs.primary_base }}
+
+      - name: Add banner (primary)
+        if: ${{ inputs.banner != '' }}
+        run: |
+          # Marca visual para distinguir el despliegue de la rama de staging.
+          sed -i "s|<body>|<body><div style=\"position:fixed;bottom:0;left:0;z-index:9999;background:#d97706;color:#fff;font:600 12px sans-serif;padding:2px 10px;border-radius:0 4px 0 0;\">${{ inputs.banner }}</div>|" dist/index.html
+          grep -c "${{ inputs.banner }}</div>" dist/index.html
+
+      - name: Stash primary build
+        run: |
+          mkdir -p /tmp/site
+          mkdir -p "/tmp/site/${{ inputs.primary_slot }}"
+          cp -r dist/. "/tmp/site/${{ inputs.primary_slot }}/"
+
+      # ---------- Build secundario (rama estable complementaria) ----------
+      - name: Checkout secondary (${{ inputs.secondary_ref }})
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.secondary_ref }}
+          clean: true
+
+      - name: Build library (ref = ${{ inputs.secondary_ref }})
+        env:
+          GH_TOKEN: ${{ secrets.LIBRARY_ACCESS_TOKEN }}
+          LIB_REF: ${{ inputs.secondary_ref }}
+        run: |
+          set -euo pipefail
+          rm -rf lib-src
+          mkdir -p resource
+          if ! curl -sfL \
+            -H "Authorization: ******" \
+            -H "Accept: application/vnd.github+json" \
+            -o resource/source.tgz \
+            "https://api.github.com/repos/${LIB_REPO}/tarball/${LIB_REF}"; then
+            echo "::error::No se pudo descargar ${LIB_REPO}@${LIB_REF}."
+            exit 1
+          fi
+          tar xzf resource/source.tgz -C lib-src --strip-components=1
+          (
+            cd lib-src
+            node -e "
+              const fs = require('fs');
+              const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+              pkg.name = 'satoshi-rc-ui';
+              fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+            "
+            npm install --legacy-peer-deps
+            npm run build:lib
+            npm pack --ignore-scripts --pack-destination ../resource
+          )
+          rm resource/source.tgz
+          LIB_VERSION=$(node -p "require('./lib-src/package.json').version")
+          export LIB_VERSION
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.dependencies['satoshi-rc-ui'] = 'file:resource/satoshi-rc-ui-' + process.env.LIB_VERSION + '.tgz';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+          echo "scaffold usa satoshi-rc-ui@${LIB_VERSION}"
+
+      - name: Install dependencies (secondary)
+        run: npm install
+
+      - name: Build app (secondary, base ${{ inputs.secondary_base }})
+        run: npm run build -- --base=${{ inputs.secondary_base }}
+
+      - name: Stash secondary build
+        run: |
+          mkdir -p "/tmp/site/${{ inputs.secondary_slot }}"
+          cp -r dist/. "/tmp/site/${{ inputs.secondary_slot }}/"
+
+      # ---------- Publicación ----------
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: /tmp/site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

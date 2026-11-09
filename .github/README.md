@@ -23,8 +23,8 @@ Este directorio centraliza la configuracion del repositorio: automatizacion (CI/
 │   ├── test.yml               # Type-check + Jest
 │   ├── build.yml              # Build de produccion
 │   ├── security.yml           # npm audit (no bloquea, reporta)
-│   ├── deploy-main.yml        # GitHub Pages desde main (produccion)
-│   ├── deploy-develop.yml     # GitHub Pages desde develop (staging)
+│   ├── deploy-main.yml        # GitHub Pages desde main (produccion en /)
+│   ├── deploy-develop.yml     # GitHub Pages desde develop (staging en /preview/)
 │   ├── commitlint.yml         # Valida mensajes de commit
 │   ├── pr-lint.yml            # Valida titulo del PR
 │   ├── auto-pr.yml            # Actualiza titulo y descripcion del PR
@@ -56,8 +56,8 @@ Este directorio centraliza la configuracion del repositorio: automatizacion (CI/
 | `test` | push/PR a `main`, `develop` | `tsc --noEmit` + Jest. |
 | `build` | push/PR a `main`, `develop` | Build de produccion y artifact de `dist/`. |
 | `security` | push/PR a `main`, `develop` | `npm audit`; reporta sin bloquear. |
-| `deploy-main` | push a `main`, manual | Build con libreria de rama `main` y deploy a GitHub Pages (produccion). |
-| `deploy-develop` | push a `develop`, manual | Build con libreria de rama `develop`, banner visual y deploy a GitHub Pages (staging). |
+| `deploy-main` | push a `main`, manual | Despliega main en `/` (produccion) y republisha develop en `/preview/` para no perderlo. |
+| `deploy-develop` | push a `develop`, manual | Despliega develop en `/preview/` (staging con banner) y republisha main en `/`. |
 | `commitlint` | PR | Valida mensajes Conventional Commits. |
 | `pr-lint` | PR (opened/edited/synchronize) | Valida el titulo del PR. |
 | `auto-pr` | PR (opened/synchronize/reopened) | Genera titulo y descripcion del PR. |
@@ -73,14 +73,20 @@ Este directorio centraliza la configuracion del repositorio: automatizacion (CI/
 
 ## Despliegues a GitHub Pages
 
-Pages solo admite un sitio por repositorio, asi que existen dos workflows separados que compiten por el mismo sitio: el ultimo push ganador es el que queda visible.
+Pages solo admite un sitio por repositorio: cada deployment reemplaza al anterior. Para que los
+despliegues sean independientes por rama sin perder contenido, ambos workflows llaman a un
+workflow reutilizado (`pages-reusable.yml`) que construye las DOS ramas y las publica juntas:
 
-| Workflow | Rama | Libreria desde | Rol |
+| Ruta | Rama | Libreria desde | Rol |
 |---|---|---|---|
-| `deploy-main` | `main` | rama `main` de la libreria | Produccion. |
-| `deploy-develop` | `develop` | rama `develop` de la libreria | Staging con banner naranja "develop". |
+| `/starter-scaffolding-react-web/` | `main` | rama `main` de la libreria | Produccion. |
+| `/starter-scaffolding-react-web/preview/` | `develop` | rama `develop` de la libreria | Staging con banner naranja "develop". |
 
-Requisito de configuracion (una sola vez): Settings → Pages → Source: **GitHub Actions**. Ambos workflows usan `--base=/starter-scaffolding-react-web/` para que los assets resuelvan bajo la ruta del proyecto.
+- Push a `main` dispara `deploy-main.yml`: build de main (primario) + republish de develop.
+- Push a `develop` dispara `deploy-develop.yml`: build de develop (primario, banner) + republish de main.
+- Ambos comparten el concurrency group `pages` para que los deployments no se pisen.
+
+Requisito de configuracion (una sola vez): Settings → Pages → Source: **GitHub Actions**. Cada build usa `--base` alineado a su ruta final para que los assets resuelvan correctamente.
 
 ## Convenciones dentro de `.github`
 
